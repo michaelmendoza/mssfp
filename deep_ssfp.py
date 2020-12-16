@@ -55,10 +55,6 @@ class DataGenerator:
         # Format data into x, y vectors
         self.format_data()
 
-        print(self.data.shape)
-        print(self.x_data.shape)
-        print(self.y_data.shape)
-
         # Split data into test/training sets 
         index = int(self.ratio * len(self.x_data)) # Split index
         self.x_train = self.x_data[0:index, :]
@@ -74,7 +70,6 @@ class DataGenerator:
 
     def format_data_split_complex(self, data):
         s = data.shape
-        print(s)
         _data = np.zeros((s[0], s[1], s[2], 2*s[3]))
         for n in range(s[3]):
             _data[:,:,:,2*n] = data[:,:,:,n].real
@@ -117,9 +112,6 @@ class DataGenerator:
 
         for n in range(4):
             imgs.append(output[:,:,2*n] + 1j * output[:,:,2*n+1])
-
-        print(results)
-        print(results.shape)
 
         for n in range(4):
             imgs.append(results[:,:,2*n] + 1j * results[:,:,2*n+1])
@@ -193,7 +185,8 @@ def train_model():
     batch_size = 16 
     test_batch_size = 8
 
-    dataset = generate_brain_dataset()
+    #dataset = generate_brain_dataset()
+    dataset = np.load('./data/phantom_data.npy')
     data = DataGenerator(dataset, width=128, height=128)
     
     x_train = data.x_train
@@ -256,5 +249,11 @@ def load_model():
     predictions = model.predict(data.x_test)
     data.plot_formatted_data(data.x_test[index], data.y_test[index], predictions[index])
 
+def generate_data_set():
+    dataset = generate_brain_dataset()
+    print(dataset.shape)
+    np.save('./data/phantom_data.npy', dataset)
+
 train_model()
-load_model()
+#load_model()
+#generate_data_set()
