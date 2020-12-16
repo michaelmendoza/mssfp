@@ -16,25 +16,28 @@ from time import time
 def load_data():
     filename = "C:/Users/michael.mendoza/projects/ssfp/mrdata/20190507_GASP_LONG_TR_WATER/set1_tr24_te12.npy"
     data = np.load(filename)
-    data = np.mean(data, axis=2) # Average coils
-    data = np.mean(data, axis=2) # Average averages
-    data = data[:,:,0::2]
+    #data = np.mean(data, axis=2) # Average coils
+    data = np.mean(data, axis=3) # Average averages
+    data = data[:,:,:,0::2]
 
     filename = "C:/Users/michael.mendoza/projects/ssfp/mrdata/20190507_GASP_LONG_TR_WATER/gre_field_mapping.npy"
     data2 = np.load(filename)
-    data2 = np.mean(data2, axis=2) # Average coils
+    #data2 = np.mean(data2, axis=2) # Average coils
+
+    print(data.shape)
+    print(data2.shape)
 
     # Show the phase-cycled images
     nx, ny = 2, 4
     plt.figure()
     for ii in range(nx*ny):
         plt.subplot(nx, ny, ii+1)
-        plt.imshow(np.abs(data[:, :, ii]))
+        plt.imshow(np.abs(data[:, :, 0, ii]))
     plt.show() 
 
     # Show field map
-    df = np.squeeze(data2[:,:,1] - data2[:,:,0])
-    plt.imshow(np.abs(df))
+    df = np.squeeze(data2[:,:,:,1] - data2[:,:,:,0])
+    plt.imshow(np.abs(df[:,:,0]))
     plt.show()
 
     return data, df
@@ -44,12 +47,17 @@ def planet_phantom_example():
     TR, alpha = 24e-3, np.deg2rad(70)
 
     sig, df = load_data()
-    sig = sig.transpose((2, 0, 1)) 
+    coil_index = 0
+    sig = sig[:,:,coil_index,:]
+    df = df[:,:,coil_index]
+    
+    sig = sig.transpose((2, 0, 1)) # Move pc to 0 index
     sig = sig[..., None]
 
     # Do T1, T2 mapping for each pixel
     mask = np.abs(sig[1,:,:,:]) > 5e-8
 
+    print('-------')
     print(sig.shape)
     print(df.shape)
     print(mask.shape)
