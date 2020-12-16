@@ -21,7 +21,7 @@ class DataGenerator:
         ratio = 0.8, 
         useNormalization = False, 
         useWhitening = True, 
-        useRandomOrder = True):
+        useRandomOrder = False):
         
         self.WIDTH = width
         self.HEIGHT = height
@@ -110,6 +110,28 @@ class DataGenerator:
         plt.imshow(self.image_data[index,:,:,0])
         plt.show()
 
+    def plot_formatted_data(self, input, output, results):
+        imgs = []
+        for n in range(4):
+            imgs.append(input[:,:,2*n] + 1j * input[:,:,2*n+1])
+
+        for n in range(4):
+            imgs.append(output[:,:,2*n] + 1j * output[:,:,2*n+1])
+
+        print(results)
+        print(results.shape)
+
+        for n in range(4):
+            imgs.append(results[:,:,2*n] + 1j * results[:,:,2*n+1])
+
+        nx, ny = 3, 4
+        plt.figure()
+        for ii in range(nx*ny):
+            plt.subplot(nx, ny, ii+1)
+            plt.imshow(np.abs(imgs[ii]))
+        plt.show() 
+
+
 # Simple Model Architecture
 def simple_model(HEIGHT, WIDTH, CHANNELS, NUM_OUTPUTS):
     xin = keras.Input(shape=(HEIGHT, WIDTH, CHANNELS), name='img')
@@ -164,10 +186,10 @@ def unet_model(HEIGHT, WIDTH, CHANNELS, NUM_OUTPUTS):
 
     return unet()
 
-def deep_ssfp():
+def train_model():
 
     # Training Parameters
-    epochs = 1
+    epochs = 100
     batch_size = 16 
     test_batch_size = 8
 
@@ -194,6 +216,8 @@ def deep_ssfp():
     NUM_OUTPUTS = 8
 
     model = unet_model(HEIGHT, WIDTH, CHANNELS, NUM_OUTPUTS)
+    #model = simple_model(HEIGHT, WIDTH, CHANNELS, NUM_OUTPUTS)
+
     model.compile(optimizer='adam', 
                     loss='mean_squared_error', 
                     metrics=['categorical_accuracy'])
@@ -202,21 +226,35 @@ def deep_ssfp():
     start = time.time()
     history = model.fit(train_dataset, 
             epochs=epochs, 
-            steps_per_epoch=200,
+            steps_per_epoch=20,
             validation_data=valid_dataset,
             validation_steps = 10)
 
     evaluation = model.evaluate(x_test, y_test, verbose=1)
+    predictions = model.predict(data.x_test)
     end = time.time()
 
     print('Summary: Accuracy: %.2f Time Elapsed: %.2f seconds' % (evaluation[1], (end - start)) )
 
-    # Plot Accuracy 
-    plt.plot(history.history["categorical_accuracy"])
-    plt.plot(history.history["val_categorical_accuracy"])
-    plt.ylabel("Accuracy")
-    plt.xlabel("Epochs")
-    plt.title('Classify Summary: Accuracy: %.2f Time Elapsed: %.2f seconds' % (evaluation[1], (end - start)))
-    plt.legend(["Train Accuracy", "Test Accuracy"], loc="upper left")
+    index = 0
+    data.plot_formatted_data(data.x_test[index], data.y_test[index], predictions[index])
+    
+    # Save model 
+    print("Save model")
+    model.save("synethetic_pc_model")
 
-deep_ssfp()
+def load_model():
+    dataset = generate_brain_dataset()
+    data = DataGenerator(dataset, width=128, height=128)
+    x_train = data.x_train
+    y_train = data.y_train
+    x_test = data.x_test
+    y_test = data.y_test
+
+    model = keras.models.load_model("data/synethetic_pc_model")
+    index = 100
+    predictions = model.predict(data.x_test)
+    data.plot_formatted_data(data.x_test[index], data.y_test[index], predictions[index])
+
+train_model()
+load_model()

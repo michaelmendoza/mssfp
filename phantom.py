@@ -7,6 +7,7 @@ import elasticdeform as ed
 import random
 from scipy import io, ndimage
 from tqdm import tqdm
+from glob import glob
 
 from mri_ssfp import ma_ssfp, add_noise_gaussian
 
@@ -95,19 +96,21 @@ def dataset_loader(path_data):
     '''
     
     # Retrieve file names in dir
-    dir_data = path_data
-    os.chdir(dir_data)
-    fileList = os.listdir()
+    regex = regex='/*.mnc'
+    fileList = glob(path_data + regex)
+    print(fileList)
     image_count = len(fileList)
-
+    
     height = 434
     width = 362
+    padding = 50
 
     mnc = [i for i in fileList if 'mnc' in i]
     atlas = []  
     for i in range(image_count):
         img = nib.load(mnc[i])
         data = img.get_fdata().astype(int)
+        data = data[padding:data.shape[0] - padding] # Remove end slices
         data[np.where(data >= 4)] = 0 # Only use masks 0-3
         atlas.append(data[..., None])
     atlas = np.concatenate(atlas, axis=0)

@@ -75,13 +75,13 @@ def brain_dataset_example():
     
     dataset = np.concatenate(dataset, axis=0)
     print(dataset.shape)
-
+    
     # Show the phase-cycled images
     nx, ny = 2, 4
     plt.figure()
     for ii in range(nx*ny):
         plt.subplot(nx, ny, ii+1)
-        plt.imshow(np.abs(dataset[100,:, :, ii]))
+        plt.imshow(np.abs(dataset[0,:, :, ii]))
         plt.title('%d deg PC' % (ii*(360/npcs)))
     plt.show()
 

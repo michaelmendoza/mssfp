@@ -12,20 +12,93 @@ from ssfp import bssfp, planet
 from glob import glob
 from os.path import isfile
 from time import time
-from rawdatarinator import readMeasDataVB15
 
 def load_data():
-    filename = "mrdata\20190507_GASP_LONG_TR_WATER\meas_MID12_TRUFI_TE12_FID42712.dat"
-    data = readMeasDataVB15(filename).squeeze()
-    data = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(
-        data, axes=(0, 1)), axes=(0, 1)), axes=(0, 1))
-    data = _data.transpose((0, 1, 2, 4, 3)) 
-    print(data.shape) 
+    filename = "C:/Users/michael.mendoza/projects/ssfp/mrdata/20190507_GASP_LONG_TR_WATER/set1_tr24_te12.npy"
+    data = np.load(filename)
+    data = np.mean(data, axis=2) # Average coils
+    data = np.mean(data, axis=2) # Average averages
+    data = data[:,:,0::2]
 
-def planet():
+    filename = "C:/Users/michael.mendoza/projects/ssfp/mrdata/20190507_GASP_LONG_TR_WATER/gre_field_mapping.npy"
+    data2 = np.load(filename)
+    data2 = np.mean(data2, axis=2) # Average coils
+
+    # Show the phase-cycled images
+    nx, ny = 2, 4
+    plt.figure()
+    for ii in range(nx*ny):
+        plt.subplot(nx, ny, ii+1)
+        plt.imshow(np.abs(data[:, :, ii]))
+    plt.show() 
+
+    # Show field map
+    df = np.squeeze(data2[:,:,1] - data2[:,:,0])
+    plt.imshow(np.abs(df))
+    plt.show()
+
+    return data, df
+
+def planet_phantom_example():
+
+    TR, alpha = 24e-3, np.deg2rad(70)
+
+    sig, df = load_data()
+    sig = sig.transpose((2, 0, 1)) 
+    sig = sig[..., None]
+
+    # Do T1, T2 mapping for each pixel
+    mask = np.abs(sig[1,:,:,:]) > 5e-8
+
+    print(sig.shape)
+    print(df.shape)
+    print(mask.shape)
+    
+    # Do the thing
+    t0 = perf_counter()
+    Mmap, T1est, T2est, dfest = planet(sig, alpha, TR, pc_axis=0)
+    print('Took %g sec to run PLANET' % (perf_counter() - t0))
+
+    print(sig.shape)
+    print(df.shape)
+    print(dfest.shape)
+
+    # Simple phase unwrapping of off-resonance estimate
+    dfest = unwrap_phase(dfest*2*np.pi*TR)/(2*np.pi*TR)
+
+    nx, ny = 3, 3
+
+    plt.subplot(nx, ny, 2)
+    plt.imshow(T1est)
+    plt.title('T1 est')
+    plt.axis('off')
+
+    plt.subplot(nx, ny, 5)
+    plt.imshow(T2est)
+    plt.title('T2 est')
+    plt.axis('off')
+
+    plt.subplot(nx, ny, 7)
+    plt.imshow(np.abs(df))
+    plt.title('df Truth')
+    plt.axis('off')
+
+    plt.subplot(nx, ny, 8)
+    plt.imshow(np.abs(dfest))
+    plt.title('df est')
+    plt.axis('off')
+
+    plt.subplot(nx, ny, 9)
+    plt.imshow(np.abs(df - dfest[:,:,0]))
+    plt.title('NRMSE: %g' % normalized_root_mse(df, dfest[:,:,0]))
+    plt.axis('off')
+
+    plt.show()
+
+def planet_shepp_logan_example():
 
     # Shepp-Logan
-    N, nslices, npcs = 128, 2, 8  # 2 slices just to show we can
+    N, nslices, npcs = 128, 1, 8  # 2 slices just to show we can
     M0, T1, T2 = shepp_logan((N, N, nslices), MR=True, zlims=(-.25, 0))
 
     # Simulate bSSFP acquisition with linear off-resonance
@@ -47,6 +120,10 @@ def planet():
     np.random.seed(0)
     sig += 1e-5*(np.random.normal(0, 1, sig.shape) +
                  1j*np.random.normal(0, 1, sig.shape))*mask
+
+    print(sig.shape)
+    print(df.shape)
+    print(mask.shape)
 
     # Do the thing
     t0 = perf_counter()
@@ -113,5 +190,8 @@ def planet():
 
     plt.show()
 
+
 if __name__ == '__main__':
-    load_data()
+    #load_data()
+    #planet_shepp_logan_example()
+    planet_phantom_example()
