@@ -129,14 +129,23 @@ def planet_shepp_logan_example():
     sig += 1e-5*(np.random.normal(0, 1, sig.shape) +
                  1j*np.random.normal(0, 1, sig.shape))*mask
 
-    print(sig.shape)
-    print(df.shape)
-    print(mask.shape)
+    print(sig.shape, alpha, TR, mask.shape)
+    
+   # Show the phase-cycled images
+    nx, ny = 2, 4
+    plt.figure()
+    for ii in range(nx*ny):
+        plt.subplot(nx, ny, ii+1)
+        plt.imshow(np.abs(sig[ii, :, :, 0]))
+        plt.title('%d deg PC' % (ii*(360/npcs)))
+    plt.show()
 
     # Do the thing
     t0 = perf_counter()
     Mmap, T1est, T2est, dfest = planet(sig, alpha, TR, mask=mask, pc_axis=0)
     print('Took %g sec to run PLANET' % (perf_counter() - t0))
+
+    print(T1est.shape, T2est.shape, dfest.shape, T1.shape, T2.shape, mask.shape)
 
     # Look at a single slice
     sl = 0
@@ -149,6 +158,8 @@ def planet_shepp_logan_example():
 
     # Simple phase unwrapping of off-resonance estimate
     dfest = unwrap_phase(dfest*2*np.pi*TR)/(2*np.pi*TR)
+
+    print('t1, mask:', T1.shape, mask.shape)
 
     nx, ny = 3, 3
     plt.subplot(nx, ny, 1)
@@ -201,5 +212,5 @@ def planet_shepp_logan_example():
 
 if __name__ == '__main__':
     #load_data()
-    #planet_shepp_logan_example()
-    planet_phantom_example()
+    planet_shepp_logan_example()
+    #planet_phantom_example()
