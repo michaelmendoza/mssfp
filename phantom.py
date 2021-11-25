@@ -1,52 +1,78 @@
-import os
 import cv2
+import math
 import numpy as np
-import matplotlib.pyplot as plt
 import nibabel as nib
 import elasticdeform as ed
 import random
-from scipy import io, ndimage
+from scipy import ndimage
 from tqdm import tqdm
 from glob import glob
+import gdown
 
 from mri_ssfp import ma_ssfp, add_noise_gaussian
 
-def generate_brain_dataset():
-    N = 128
-    npcs = 8
-    freq = 500
+def download_brain_data(path: str ='./data'):
+    ''' Downloads brain dataset if pathfolder doesn't exists. Data taken from 
+    https://brainweb.bic.mni.mcgill.ca/anatomic_normal_20.html '''
 
-    data = dataset_loader('./data')
+    files = glob(f'{path}/*.mnc')
+    if len(files) == 0:
+        print('Downloading files ...')
+        url = 'https://drive.google.com/drive/folders/1oJMmjG44RbpMDkPDNQJzGUlIcdssTYGx?usp=sharing'
+        gdown.download_folder(url, quiet=True, output=f'{path}')
+        print('Download complete.')
+
+def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3, 
+        TR: float = 3e-3, TE: float = 3e-3 / 2, alpha = np.deg2rad(15), sigma = 0,
+        path='./data', data_indices=[]):
+    '''
+    SSFP Dataset Generator
+
+    Parameters
+    ----------
+    N : int
+        Grid size.
+    npcs: int
+        Number of phase cycles.
+    f : float
+        Off-resonance frequency.
+    TR : float
+        Repetition time (in seconds). Defaults to 3e-3
+    TE : float
+        Echo time (in seconds). Defaults to 3e-3 / 2
+    alpha : float
+        Flip angle in radians.
+    sigma : float
+        Signal Noise - Generated from gaussian distribution with std dev = sigma 
+    path : string
+        Folder Path for data defauls to './data'
+    '''
+
+    # Load dataslice if data_indices are specifed, otherwise load complete dataset
+    if len(data_indices) == 0: 
+        data = load_dataset(path)
+    else:
+        data = load_dataslice(image_index = data_indices[0], slice_index = data_indices[1])
+
+    # Generate phantom
+    phantom = generate_3d_phantom(data, N=N, f=f)
+    M0 = phantom['M0']
+    T1 = phantom['t1_map']
+    T2 = phantom['t2_map']
+    df = phantom['offres']
+
+    # Simulation SSFP with phantom data 
     dataset = []
-
+    pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
     for i in tqdm(range(data.shape[0])):
-
-        # Generate off resonance 
-        offres = generate_offres(N, f=freq, rotate=True, deform=True) 
-
-        # alpha = flip angle
-        alpha = np.deg2rad(60)
-
-        # Create brain phantom
-        phantom = generate_phantom(data, alpha, img_no=i, offres=offres)
-
-        # Get phantom parameter
-        M0, T1, T2, alpha, df, _sample = get_phantom_parameters(phantom)
-
-        # Generate phase-cycled images 
-        TR = 3e-3
-        TE = TR / 2
-        pcs = np.linspace(0, 2 * np.pi, npcs, endpoint=False)
-        M = ma_ssfp(T1, T2, TR, TE, alpha, f0=df, dphi=pcs, M0=M0)
-        M = add_noise_gaussian(M, sigma=0.015)
+        M = ma_ssfp(T1[i, :, :], T2[i, :, :], TR, TE, alpha, field_map=df[i, :, :], dphi=pcs, M0=M0[i, :, :])
+        M = add_noise_gaussian(M, sigma=sigma)
         dataset.append(M[None, ...])
-    
-    dataset = np.concatenate(dataset, axis=0)
-    print(dataset.shape)
-    
-    return dataset
 
-def data_loader(path_data, image_count=1, slice_index=175):
+    dataset = np.concatenate(dataset, axis=0)
+    return { 'M': dataset, 'phantom': phantom }
+
+def load_dataslice(path_data = './data', image_index = 1, slice_index = 150):
     '''
     Loads brain atlas data in mnic1 data format 
 
@@ -54,37 +80,31 @@ def data_loader(path_data, image_count=1, slice_index=175):
     ----------
     path_data : string
         File path for data
-    image_count : int
+    image_index : int
         Number of images
     slice_index : int
         Slice index
     '''
     
+    # Download data if needed 
+    download_brain_data(path_data)
+
     # Retrieve file names in dir
-    dir_data = path_data
-    os.chdir(dir_data)
-    fileList = os.listdir()
-    msg = "image_count should between 1-" + str(len(fileList))
-    assert image_count >= 1 and image_count <= len(fileList), msg
-
-    height = 434
-    width = 362
-
+    regex = regex='/*.mnc'
+    fileList = glob(path_data + regex)
     mnc = [i for i in fileList if 'mnc' in i]
-    atlas = np.zeros((image_count, height, width))  
-    for i in range(image_count):
-        img = nib.load(mnc[i])
-        data = img.get_fdata()[slice_index, :, :].astype(int)
-        plt.imshow(data)
-        plt.show()
-        
-        data[np.where(data >= 4)] = 0 # Only use masks 0-3
-        atlas = data.reshape((1, height, width))
 
-    atlas = atlas.astype(int)
-    return atlas
+    # Make image_index is in valid range 
+    msg = "image_count should between 1-" + str(len(fileList))
+    assert image_index >= 1 and image_index <= len(fileList), msg
 
-def dataset_loader(path_data):
+    # Load data 
+    img = nib.load(mnc[image_index])
+    data = img.get_fdata()[slice_index, :, :].astype(int)    
+    data[np.where(data >= 4)] = 0 # Only use masks 0-3
+    return data.reshape((1, data.shape[0], data.shape[1]))
+
+def load_dataset(path_data = './data', file_count = None, padding = 50):
     '''
     Loads brain atlas data in mnic1 data format and returns an array of
     size (slices, width, height)
@@ -93,20 +113,22 @@ def dataset_loader(path_data):
     ----------
     path_data : string
         File path for data
+    file_count : int
+        Number of files to use for dataset (default: None -> All files)
+    padding : int
+        Number of slices to ignore loading for each file 
     '''
+
+    # Download data if needed 
+    download_brain_data(path_data)
     
     # Retrieve file names in dir
     regex = regex='/*.mnc'
     fileList = glob(path_data + regex)
-    print(fileList)
-    image_count = len(fileList)
-    
-    height = 434
-    width = 362
-    padding = 50
-
     mnc = [i for i in fileList if 'mnc' in i]
+
     atlas = []  
+    image_count = file_count if file_count else len(fileList)
     for i in range(image_count):
         img = nib.load(mnc[i])
         data = img.get_fdata().astype(int)
@@ -117,12 +139,11 @@ def dataset_loader(path_data):
     atlas = np.squeeze(atlas)
 
     atlas = atlas.astype(int)
-    print(atlas.shape)
     return atlas
 
 def generate_offres(N, f=300, rotate=True, deform=True):
     '''
-    offres generator
+    Off-resonance generator
 
     Parameters
     ----------
@@ -144,6 +165,54 @@ def generate_offres(N, f=300, rotate=True, deform=True):
     if deform == True:
         offres = ed.deform_random_grid(offres, sigma=10, points=3, order=3, mode='nearest')
     return offres
+
+def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, M0: float = 1):
+    ''' 
+    Phantom tissue generator
+
+    Parameters
+    ----------
+        data : Anatomical models generated from .mnc files
+        N : Size
+        f : Off-resonance
+        B0 : Magnetic field
+        M0 : Tissue magnetization
+    '''
+
+    print('Generating 3d phantom:' + str(data.shape))
+    slice_count = data.shape[0]
+
+    # Sample dataset and generate off-resonance 
+    sample = np.zeros((slice_count, N, N))
+    offres = np.zeros((slice_count, N, N))
+    for i in range(slice_count):
+        sample[i, :, :] = cv2.resize(data[i, :, :], (N, N), interpolation=cv2.INTER_NEAREST)
+        offres[i, :, :] = generate_offres(N, f=f, rotate=False, deform=False) 
+
+    # Generate ROI mask
+    roi_mask = (sample != 0)
+
+    # Generate t1/t2 maps
+    params = mr_relaxation_parameters(B0)
+    t1_map = np.zeros((slice_count, N, N))
+    t2_map = np.zeros((slice_count, N, N))
+    t1_map[np.where(sample == 1)] = params['csf'][0]
+    t1_map[np.where(sample == 2)] = params['gray-matter'][0]
+    t1_map[np.where(sample == 3)] = params['white-matter'][0]
+    t2_map[np.where(sample == 1)] = params['csf'][1]
+    t2_map[np.where(sample == 2)] = params['gray-matter'][1]
+    t2_map[np.where(sample == 3)] = params['white-matter'][1]
+
+    # Package Phantom 
+    phantom = {}
+    phantom['M0'] = M0 * roi_mask
+    phantom['t1_map'] = t1_map * roi_mask
+    phantom['t2_map'] = t2_map * roi_mask
+    phantom['offres'] = offres * roi_mask
+    phantom['mask'] = roi_mask
+    phantom['raw'] = sample
+
+    return phantom
 
 def generate_phantom(bw_input, alpha, img_no=0, N=128, TR=3e-3, d_flip=10,
             offres=None, B0=3, M0=1):
@@ -186,7 +255,7 @@ def generate_phantom(bw_input, alpha, img_no=0, N=128, TR=3e-3, d_flip=10,
     roi_mask = (sample != 0)
     ph = np.zeros((N, N, dim))
 
-    params = _mr_relaxation_parameters(B0)
+    params = mr_relaxation_parameters(B0)
     t1_map = np.zeros((N, N))
     t2_map = np.zeros((N, N))
     t1_map[np.where(sample == 1)] = params['csf'][0]
@@ -217,29 +286,19 @@ def get_phantom_parameters(phantom):
 
     return M0, T1, T2, flip_angle, df, sample
 
-def _mr_relaxation_parameters(B0):
+
+def mr_relaxation_parameters(B0):
     '''Returns MR relaxation parameters for certain tissues.
 
     Returns
     -------
     params : dict
-        Gives entries as [A, C, (t1), t2, chi]
+        Gives entries as [t1, t2]
 
     Notes
     -----
-    If t1 is None, the model T1 = A*B0^C will be used.  If t1 is not
-    np.nan, then specified t1 will be used.
+        Model: T1 = A * B0^C will be used. 
     '''
-
-    # params['tissue-name'] = [A, C, (t1 value if explicit), t2, chi]
-    # params = dict()
-    # params['scalp'] = [.324, .137, np.nan, .07, -7.5e-6]
-    # params['marrow'] = [.533, .088, np.nan, .05, -8.85e-6]
-    # params['csf'] = [np.nan, np.nan, 4.2, 1.99, -9e-6]
-    # params['blood-clot'] = [1.35, .34, np.nan, .2, -9e-6]
-    # params['gray-matter'] = [.857, .376, np.nan, .1, -9e-6]
-    # params['white-matter'] = [.583, .382, np.nan, .08, -9e-6]
-    # params['tumor'] = [.926, .217, np.nan, .1, -9e-6]
 
     t1_t2 = dict()
     t1_t2['csf'] = [4.2, 1.99] #labelled T1 and T2 map for CSF

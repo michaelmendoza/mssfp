@@ -6,7 +6,7 @@ import random
 from tqdm import tqdm
 from time import perf_counter
 
-from phantom import data_loader, dataset_loader, generate_offres, generate_phantom, get_phantom_parameters
+from phantom import load_dataslice, load_dataset, generate_offres, generate_phantom, get_phantom_parameters
 from mri_ssfp import ma_ssfp, add_noise_gaussian
 from ssfp import bssfp, planet
 from ormtre import ormtre
@@ -16,7 +16,7 @@ def brain_example():
     npcs = 6 
 
     filepath = './data'
-    data = data_loader(filepath, image_count=1, slice_index=150)
+    data = load_dataslice(filepath, image_index=1, slice_index=150)
 
     freq = 500
     offres = generate_offres(N, f=freq, rotate=True, deform=True) 
@@ -51,7 +51,7 @@ def brain_example():
 def brain_planet_example():
     N = 128; npcs = 8 
     filepath = './data'
-    data = data_loader(filepath, image_count=1, slice_index=150)
+    data = load_dataslice(filepath, image_index=1, slice_index=150)
 
     freq = 1 / 3e-3
     offres = generate_offres(N, f=freq, rotate=True, deform=True) 
@@ -161,7 +161,7 @@ def brain_planet_example():
 def brain_planet_virtual_ellipse_example():
     N = 128; 
     filepath = './data'
-    data = data_loader(filepath, image_count=1, slice_index=150)
+    data = load_dataslice(filepath, image_index=1, slice_index=150)
 
     freq = 1 / 3e-3
     offres = generate_offres(N, f=freq, rotate=True, deform=True) 
@@ -283,7 +283,7 @@ def brain_dataset_example():
     npcs = 8
     freq = 500
 
-    data = dataset_loader('./data')
+    data = load_dataset('./data')
     dataset = []
 
     for i in tqdm(range(data.shape[0])):

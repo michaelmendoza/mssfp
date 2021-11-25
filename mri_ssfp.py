@@ -1,5 +1,6 @@
 ''' ssfp simulation '''
 
+from typing import Any
 import numpy as np
 
 def ma_ssfp(T1, T2, TR, TE, alpha, dphi, field_map=0, M0=1, f0=0, phi=0):
@@ -35,13 +36,16 @@ def ssfp(T1, T2, TR, TE, alpha, dphi=0, field_map=0, M0=1, f0=0, phi=0):
         phase offset (in rad).
     '''
     
+    # Convention for Ernst-Anderson based implementation from Hoff
+    field_map = -1 * field_map
+    
     # Set T1, T2, alpha, and field_map inputs to arrays
     T1 = np.atleast_2d(T1)
     T2 = np.atleast_2d(T2)
     alpha = np.atleast_2d(alpha)
     f0 = np.atleast_2d(f0)
     field_map = np.atleast_2d(field_map)
-    
+
     # Compute exponetial decay and handle T1, T2 of zero
     E1 = np.zeros(T1.shape)
     E1[T1 > 0] = np.exp(-TR/T1[T1 > 0])
