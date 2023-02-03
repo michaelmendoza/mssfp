@@ -9,7 +9,7 @@ from tqdm import tqdm
 from glob import glob
 import gdown
 
-from mri_ssfp import ma_ssfp, add_noise_gaussian
+from .mri_ssfp import ma_ssfp, add_noise_gaussian
 
 def download_brain_data(path: str ='./data'):
     ''' Downloads brain dataset if pathfolder doesn't exists. Data taken from 

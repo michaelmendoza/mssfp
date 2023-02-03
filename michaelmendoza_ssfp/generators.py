@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from skimage import io, transform
 
-from mri_ssfp import ma_ssfp, add_noise_gaussian
+from .mri_ssfp import ma_ssfp, add_noise_gaussian
 
 # T1/T2 values taken from https://mri-q.com/why-is-t1--t2.html
 tissue_map = {
