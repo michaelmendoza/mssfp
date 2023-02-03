@@ -24,7 +24,8 @@ dependencies = [
     "opencv-python",
     "nibabel",
     "imageio",
-    "imageio-ffmpeg"
+    "imageio-ffmpeg",
+    "ellipsinator"
 ]
 
 [project.urls]

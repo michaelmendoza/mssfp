@@ -8,3 +8,4 @@ nibabel
 imageio
 imageio-ffmpeg
 jupyterlab==3.5.3
+ellipsinator
