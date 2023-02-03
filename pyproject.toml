@@ -1,6 +1,6 @@
 [build-system]
-requires = ["meson", "ninja", "Cython", "numpy", "scipy", "meson-python"]
-build-backend = "mesonpy"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "michaelmendoza/ssfp"
