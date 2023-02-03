@@ -24,7 +24,7 @@ def download_brain_data(path: str ='./data'):
 
 def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3, 
         TR: float = 3e-3, TE: float = 3e-3 / 2, alpha = np.deg2rad(15), sigma = 0,
-        path='./data', data_indices=[]):
+        path='./data', data_indices=[], rotate = False, deform = False):
     '''
     SSFP Dataset Generator
 
@@ -55,7 +55,7 @@ def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3,
         data = load_dataslice(image_index = data_indices[0], slice_index = data_indices[1])
 
     # Generate phantom
-    phantom = generate_3d_phantom(data, N=N, f=f)
+    phantom = generate_3d_phantom(data, N=N, f=f, rotate=rotate, deform=deform)
     M0 = phantom['M0']
     T1 = phantom['t1_map']
     T2 = phantom['t2_map']
@@ -166,7 +166,7 @@ def generate_offres(N, f=300, rotate=True, deform=True):
         offres = ed.deform_random_grid(offres, sigma=10, points=3, order=3, mode='nearest')
     return offres
 
-def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, M0: float = 1):
+def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, M0: float = 1, rotate=False, deform=False):
     ''' 
     Phantom tissue generator
 
@@ -187,7 +187,7 @@ def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, 
     offres = np.zeros((slice_count, N, N))
     for i in range(slice_count):
         sample[i, :, :] = cv2.resize(data[i, :, :], (N, N), interpolation=cv2.INTER_NEAREST)
-        offres[i, :, :] = generate_offres(N, f=f, rotate=False, deform=False) 
+        offres[i, :, :] = generate_offres(N, f=f, rotate=rotate, deform=deform) 
 
     # Generate ROI mask
     roi_mask = (sample != 0)
