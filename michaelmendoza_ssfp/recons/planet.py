@@ -3,7 +3,6 @@
 import numpy as np
 from ellipsinator import fast_guaranteed_ellipse_estimate as ellipse_fit
 
-
 def planet(I, alpha, TR, T1_guess=None, pcs=None, mask=None, pc_axis=-1, ret_all=False):
     '''Simultaneous T1, T2 mapping using phase‐cycled bSSFP.
     Adapted from: https://github.com/mckib2/ssfp/blob/master/ssfp/planet.py 
@@ -216,21 +215,3 @@ def planet(I, alpha, TR, T1_guess=None, pcs=None, mask=None, pc_axis=-1, ret_all
         np.reshape(T2, sh),
         np.reshape(df, sh),
     )
-
-
-if __name__ == '__main__':
-    pass
-Footer
-© 2023 GitHub, Inc.
-Footer navigation
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
