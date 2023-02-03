@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["meson", "ninja", "Cython", "numpy", "scipy", "meson-python"]
+build-backend = "mesonpy"
 
 [project]
 name = "michaelmendoza/ssfp"
@@ -11,12 +11,25 @@ authors = [
 description = "SSFP Simulation Package"
 readme = "README.md"
 requires-python = ">=3.8"
+keywords = ["mri", "grappa", "sense"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-image",
+    "tqdm",
+    "elasticdeform",
+    "opencv-python",
+    "nibabel",
+    "imageio",
+    "imageio-ffmpeg"
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/michaelmendoza/ssfp"
 "Bug Tracker" = "https://github.com/michaelmendoza/ssfp/issues"
+
+[project.optional-dependencies]
+examples = ["matplotlib", "jupyterlab"]
