@@ -3,14 +3,22 @@
 from typing import Any
 import numpy as np
 
-def ma_ssfp(T1, T2, TR, TE, alpha, dphi, field_map=0, M0=1, f0=0, phi=0):
-    M = []
-    for ii, pc in enumerate(dphi):
-        M.append(ssfp(T1, T2, TR, TE, alpha, pc, field_map, M0, f0, phi)[..., None])
-    M = np.concatenate(M, axis=-1)
-    return M
-
 def ssfp(T1, T2, TR, TE, alpha, dphi=0, field_map=0, M0=1, f0=0, phi=0):
+    ''' Simulation for transverse signal for ssfp mri after excitation at TE. 
+        Input an array of dphi values will generate muliple phase-cycled ssfp images. '''
+        
+    if np.isscalar(dphi):
+        # Generate M values for single phase-cycled image
+        return _ssfp(T1, T2, TR, TE, alpha, dphi, field_map, M0, f0, phi)
+    else:
+        # Generate M values for muliple phase-cycled images 
+        M = []
+        for ii, pc in enumerate(dphi):
+            M.append(_ssfp(T1, T2, TR, TE, alpha, pc, field_map, M0, f0, phi)[..., None])
+        M = np.concatenate(M, axis=-1)
+        return M
+
+def _ssfp(T1, T2, TR, TE, alpha, dphi, field_map=0, M0=1, f0=0, phi=0):
     ''' transverse signal for ssfp mri after excitation at TE 
     
     Parameters
@@ -77,7 +85,7 @@ def ssfp(T1, T2, TR, TE, alpha, dphi=0, field_map=0, M0=1, f0=0, phi=0):
     return Mc
 
 def add_noise_gaussian(I, mu=0, sigma=0.005, factor = 1):
-    r'''add gaussian noise to given simulated bSSFP signals
+    '''add gaussian noise to given simulated bSSFP signals
     Parameters
     ----------
     I: array_like
@@ -87,7 +95,7 @@ def add_noise_gaussian(I, mu=0, sigma=0.005, factor = 1):
     sd: float
         standard deviation of the normal distribution
 
-        Returns
+    Returns
     -------
     Mxy : numpy.array
         Transverse complex magnetization with added .

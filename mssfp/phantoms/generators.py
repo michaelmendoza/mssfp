@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from skimage import io, transform
 
-from .mri_ssfp import ma_ssfp, add_noise_gaussian
+from ..simulations import ssfp, add_noise_gaussian
 
 # T1/T2 values taken from https://mri-q.com/why-is-t1--t2.html
 tissue_map = {
@@ -20,12 +20,6 @@ tissue_map = {
     'tendon': [0.4, 0.005],
     'proteins': [0.250, 0.001]
 }
-
-def generate_shepp_phantom2d(height, width):
-        filename = 'shepp256.png'
-        img = mpimg.imread(filename)
-        img = np.array(img)
-        img = transform.resize(img, (height, width), mode='constant')
 
 def generate_block_phantom2d(padding = 8, f0 = 4 / 3e-3):
     width = 64
@@ -90,7 +84,7 @@ def generate_block_phantom2d_ssfp(depth = 128, TR = 3e-3, TE = 3e-3 / 2, alpha =
     dataset = []
     pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
     for i in tqdm(range(depth)):
-        M = ma_ssfp(T1, T2, TR, TE, alpha, field_map=df, dphi=pcs, M0=M0)
+        M = ssfp(T1, T2, TR, TE, alpha, field_map=df, dphi=pcs, M0=M0)
         M = add_noise_gaussian(M, sigma=sigma)
         dataset.append(M[None, ...])
 

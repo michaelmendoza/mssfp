@@ -9,7 +9,7 @@ from tqdm import tqdm
 from glob import glob
 import gdown
 
-from .mri_ssfp import ma_ssfp, add_noise_gaussian
+from ..simulations import ssfp, add_noise_gaussian
 
 def download_brain_data(path: str ='./data'):
     ''' Downloads brain dataset if pathfolder doesn't exists. Data taken from 
@@ -65,7 +65,7 @@ def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3,
     dataset = []
     pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
     for i in tqdm(range(data.shape[0])):
-        M = ma_ssfp(T1[i, :, :], T2[i, :, :], TR, TE, alpha, field_map=df[i, :, :], dphi=pcs, M0=M0[i, :, :])
+        M = ssfp(T1[i, :, :], T2[i, :, :], TR, TE, alpha, field_map=df[i, :, :], dphi=pcs, M0=M0[i, :, :])
         M = add_noise_gaussian(M, sigma=sigma)
         dataset.append(M[None, ...])
 
