@@ -1,20 +1,20 @@
 
 # mSSFP (Multi-SSFP Reconstruction Library)
 
-mSSFP is library for image reconstuction for SSFP. This library supports ssfp simulations, various phantom generators, ssfp recontructions.
+mSSFP is library for image reconstuction for multi-acqusition SSFP. This library supports ssfp simulations, various phantom generators, and various ssfp recontructions using muliple phase-cycled ssfp images. 
 
-Multiple SSFP images with different phase cycle amounts can be combined to suppress banding artifacts and for the estimation of quantitative biomarker like T1/T2 relaxation parameter mappings. Multiple methods for band suppression have been developed over the years, but each method has limitations.
+Steady-Stead Free Precession (SSFP) MRI is class of fast pulse sequence capable of generating high SNR images. However, SSFP is highly-sensitive to off-resonance effects, which cause banding artifacts. Multiple SSFP images with different phase cycle amounts can be combined to suppress banding artifacts and for the estimation of quantitative biomarker like T1/T2 relaxation parameter mappings. Multiple methods for band suppression have been developed over the years, and this library gives working code and notebook examples for a variety of these reconstrcution techniques.
 
 ## Features
 
 ### Simultations
   - ssfp
 
-### phantoms
-  - Shepp-Logan Phantom
-  - Brain Phantom
-  - Simple Block Phantoms
-### Banding Arfact Removl Recons
+### Phantoms
+  - Shepp-Logan phantom
+  - Simple block phantoms
+  - Brain phantom
+### Banding Artifact Removal Recons
   - Sum of squares 
   - Eliptical singal model 
   - Super field of view (superFOV)
