@@ -5,18 +5,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.metrics import normalized_root_mse
 
-def plot_dataset(data, slice = None):
+def plot_dataset(data, slice = None, cmap='gray'):
     ''' Plots a slice of dataset of form: [Slice, Height, Width, Channel] '''
 
     slice = 0 if slice is None else slice
     npcs = data.shape[3]
     nx, ny = 2, int(npcs / 2)
     plt.figure()
+    if(cmap):
+        plt.set_cmap(cmap)
     for ii in range(nx*ny):
         _data = np.abs(data[slice, :, :, ii])
         plt.subplot(nx, ny, ii+1)
         plt.imshow(_data)
         plt.title('%d deg PC' % (ii*(360/npcs)))
+        plt.xticks([])
+        plt.yticks([])
     plt.show()
 
 def combine_channels(data):
@@ -27,14 +31,14 @@ def combine_channels(data):
     _data = np.concatenate(_data, axis=0)
     return np.transpose(_data, (2,1,0))
 
-def show_dataset_channel(data, channel = 4):
+def show_dataset_channel(data, channel = 4, mp4_filename = '_'):
     ''' Shows a channel of dataset in a video  (time is the slice dimension) '''
 
     _data = (np.abs(data[:,:,:,channel]) * 255).astype(np.uint8)
-    imageio.mimwrite('_.mp4', _data, fps=30); 
-    return Video('_.mp4', width=480, height=360) 
+    imageio.mimwrite(f'{mp4_filename}.mp4', _data, fps=30); 
+    return Video(f'{mp4_filename}.mp4', width=480, height=360) 
 
-def show_dataset(data):
+def show_dataset(data, mp4_filename = '_'):
     ''' Shows dataset in a video (time is the slice dimension) '''
 
     if len(data.shape) == 4:
@@ -45,8 +49,8 @@ def show_dataset(data):
         return None
 
     _data = (np.abs(_data) * 255).astype(np.uint8)
-    imageio.mimwrite('_.mp4', _data, fps=30); 
-    return Video('_.mp4', width=_data.shape[2], height=_data.shape[1])
+    imageio.mimwrite(f'{mp4_filename}.mp4', _data, fps=30); 
+    return Video(f'{mp4_filename}.mp4', width=_data.shape[2], height=_data.shape[1])
 
 def plot_planet_results(mask, T1, T1est, T2, T2est, df, dfest):
 
