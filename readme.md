@@ -25,6 +25,12 @@ Multiple SSFP images with different phase cycle amounts can be combined to suppr
 
 Jupyter notebooks for examples of how to use the mSSFP library.
 
+- Basic SSFP Simulations ([notebook](notebooks/1_sspf_simulations.ipynb))
+- Phantom Examples ([notebook](notebooks/2_phantoms.ipynb))
+- SSFP Banding Artifact Removal ([notebook](notebooks/3_ssfp_band_removal.ipynb))
+- PLANET for T2/T1 Mapping of SSFP ([notebook](notebooks/4_ssfp_brain_planet.ipynb))
+- SuperFOV for accelerated SSFP ([notebook](notebooks/5_superFOV.ipynb))
+
 ## Development
 
 This project requires python 3.8+ and has the dependancies in requirement.txt
