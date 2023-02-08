@@ -8,7 +8,7 @@ Steady-Stead Free Precession (SSFP) MRI is class of fast pulse sequence capable 
 ## Features
 
 ### Simultations
-  - ssfp
+  - SSFP
 
 ### Phantoms
   - Shepp-Logan phantom
