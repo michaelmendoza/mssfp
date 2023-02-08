@@ -29,7 +29,7 @@ Jupyter notebooks for examples of how to use the mSSFP library.
 - Phantom Examples ([notebook](notebooks/2_phantoms.ipynb))
 - SSFP Banding Artifact Removal ([notebook](notebooks/3_ssfp_band_removal.ipynb))
 - PLANET for T2/T1 Mapping of SSFP ([notebook](notebooks/4_ssfp_brain_planet.ipynb))
-- SuperFOV for accelerated SSFP ([notebook](notebooks/5_superFOV.ipynb))
+- SuperFOV for accelerated SSFP ([simple notebook](notebooks/5_superFOV.ipynb), [detailed notebook](notebooks/5a_superFOV_detailed.ipynb))
 
 ## Development
 
