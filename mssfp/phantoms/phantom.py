@@ -72,6 +72,30 @@ def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3,
     dataset = np.concatenate(dataset, axis=0)
     return { 'M': dataset, 'phantom': phantom }
 
+def generate_brain_phantom(N: int = 128, f: float = 1 / 3e-3, path='./data', data_indices=[], rotate = False, deform = False):
+    '''
+    SSFP Dataset Generator
+
+    Parameters
+    ----------
+    N : int
+        Grid size.
+    f : float
+        Off-resonance frequency.
+    path : string
+        Folder Path for data defauls to './data'
+    '''
+
+    # Load dataslice if data_indices are specifed, otherwise load complete dataset
+    if len(data_indices) == 0: 
+        data = load_dataset(path)
+    else:
+        data = load_dataslice(image_index = data_indices[0], slice_index = data_indices[1])
+
+    # Generate phantom
+    phantom = generate_3d_phantom(data, N=N, f=f, rotate=rotate, deform=deform)
+    return phantom
+
 def load_dataslice(path_data = './data', image_index = 1, slice_index = 150):
     '''
     Loads brain atlas data in mnic1 data format 
