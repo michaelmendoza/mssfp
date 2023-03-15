@@ -3,6 +3,7 @@ scipy==1.10.0
 matplotlib==3.6.3
 tqdm==4.64.1
 elasticdeform
+opencv-python
 nibabel
 imageio
 imageio-ffmpeg
