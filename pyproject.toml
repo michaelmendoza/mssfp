@@ -21,7 +21,7 @@ dependencies = [
     "scikit-image",
     "tqdm",
     "elasticdeform",
-    "opencv-python==4.3.0.38",
+    "opencv-python",
     "nibabel",
     "imageio",
     "imageio-ffmpeg",
