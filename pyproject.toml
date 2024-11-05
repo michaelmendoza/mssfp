@@ -8,13 +8,14 @@ allow-direct-references = true
 [project]
 name = "mssfp"
 dynamic = ["version"]
-authors = [
-  { name="Michael Mendoza", email="askmichaelmendoza@gmail.com" },
-]
 description = "mSSFP is library for image reconstuction for multi-acqusition SSFP"
 readme = "README.md"
 requires-python = ">=3.8"
+license = "MIT"
 keywords = ["mri", "grappa", "sense"]
+authors = [
+  { name="Michael Mendoza", email="askmichaelmendoza@gmail.com" },
+]
 classifiers = [
     "Programming Language :: Python :: 3",
 ]
@@ -35,10 +36,13 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/michaelmendoza/mssfp"
-"Bug Tracker" = "https://github.com/michaelmendoza/ssfp/issues"
+"Bug Tracker" = "https://github.com/michaelmendoza/mssfp/issues"
 
 [project.optional-dependencies]
 examples = ["matplotlib", "jupyterlab"]
+
+[tool.hatch.version]
+path = "mssfp/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [

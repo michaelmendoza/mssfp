@@ -1,10 +1,16 @@
-/data
-/saved
-/mrdata
-/__pycache__
 
+# Python-related files
+/__pycache__
 *__pycache__
 *.ipynb_checkpoints
+
+# Data files
 *.mp4
 *.mnc
 *.npy
+
+# Distrubution / packaging 
+/data
+/saved
+/mrdata
+/dist
