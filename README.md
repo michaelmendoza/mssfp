@@ -9,11 +9,11 @@ Steady-Stead Free Precession (SSFP) MRI is class of fast pulse sequence capable 
 
 Jupyter notebooks for examples of how to use the mSSFP library.
 
-- Basic SSFP Simulations ([notebook](notebooks/1_sspf_simulations.ipynb))
-- Phantom Examples ([notebook](notebooks/2_phantoms.ipynb))
-- SSFP Banding Artifact Removal ([notebook](notebooks/3_ssfp_band_removal.ipynb))
-- PLANET for T2/T1 Mapping of SSFP ([notebook](notebooks/4_ssfp_brain_planet.ipynb))
-- SuperFOV for accelerated SSFP ([simple notebook](notebooks/5_superFOV.ipynb), [detailed notebook](notebooks/5a_superFOV_detailed.ipynb))
+- Basic SSFP Simulations ([notebook](https://github.com/michaelmendoza/mssfp/blob/master/notebooks/1_sspf_simulations.ipynb))
+- Phantom Examples ([notebook](https://github.com/michaelmendoza/mssfp/blob/master/notebooks/2_phantoms.ipynb))
+- SSFP Banding Artifact Removal ([notebook](https://github.com/michaelmendoza/mssfp/blob/master/notebooks/3_ssfp_band_removal.ipynb))
+- PLANET for T2/T1 Mapping of SSFP ([notebook](https://github.com/michaelmendoza/mssfp/blob/master/notebooks/4_ssfp_brain_planet.ipynb))
+- SuperFOV for accelerated SSFP ([simple notebook](https://github.com/michaelmendoza/mssfp/blob/master/notebooks/5_superFOV.ipynb), [detailed notebook](notebooks/5a_superFOV_detailed.ipynb))
 
 ## Features
 
