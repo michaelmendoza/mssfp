@@ -1,4 +1,4 @@
-
+from .__about__ import __version__
 from .plots import *
 from .phantoms import *
 from .recons import gs_recon, planet, rsos, super_fov
