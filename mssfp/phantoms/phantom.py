@@ -1,4 +1,4 @@
-import cv2
+from PIL import Image
 import math
 import numpy as np
 import nibabel as nib
@@ -10,6 +10,12 @@ from glob import glob
 import gdown
 
 from ..simulations import ssfp, add_noise_gaussian
+
+def resize(img, size):
+    ''' Resizes a mask image. Img should be an uint8. '''
+    img = np.squeeze(img).astype(np.uint8)
+    new_image = np.array(Image.fromarray(img).resize(size, Image.NEAREST))
+    return new_image
 
 def download_brain_data(path: str ='./data'):
     ''' Downloads brain dataset if pathfolder doesn't exists. Data taken from 
@@ -210,7 +216,7 @@ def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, 
     sample = np.zeros((slice_count, N, N))
     offres = np.zeros((slice_count, N, N))
     for i in range(slice_count):
-        sample[i, :, :] = cv2.resize(data[i, :, :], (N, N), interpolation=cv2.INTER_NEAREST)
+        sample[i, :, :] = resize(data[i, :, :], (N, N))
         offres[i, :, :] = generate_offres(N, f=f, rotate=rotate, deform=deform) 
 
     # Generate ROI mask
@@ -275,7 +281,7 @@ def generate_phantom(bw_input, alpha, img_no=0, N=128, TR=3e-3, d_flip=10,
     sample = bw_input[img_no, :, :]
 
     sample = np.reshape(sample, (bw_input.shape[1], bw_input.shape[2]))
-    sample = cv2.resize(sample, (N, N), interpolation=cv2.INTER_NEAREST)
+    sample = resize(sample, (N, N))
     roi_mask = (sample != 0)
     ph = np.zeros((N, N, dim))
 
