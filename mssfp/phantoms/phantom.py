@@ -284,7 +284,7 @@ def load_dataslice(path_data='./data', image_index=0, slice_index=150):
 
     return data
 
-def generate_offres(N, f=300, rotate=True, deform=True):
+def generate_offres(N, f=300, rotate=True, deform=True, max_rot = 360, noise_offset=100, noise_sigma=5):
     '''
     Off-resonance generator
 
@@ -298,11 +298,21 @@ def generate_offres(N, f=300, rotate=True, deform=True):
         Rotation flag
     deform : bool
         Elastic Deformation flag
+    max_rot : float
+        Maximum rotation angle in degrees
+    noise_offset : float
+        Noise offset - the range of the mean of the Gaussian noise added to the off-resonance map
+    noise_sigma : float
+        Noise sigma - the standard deviation of the Gaussian noise added to the off-resonance map
     '''
-    max_rot = 360
-    offres = np.zeros((N, N))
+    
+    offres = np.zeros((N, N)) 
+    noise_offset = noise_offset * np.random.uniform(-1,1)
+    offres_noise = np.random.normal(0, noise_sigma, size=offres.shape)
+
     rot_angle = max_rot * random.uniform(-1,1)
     offres, _ = np.meshgrid(np.linspace(-f, f, N), np.linspace(-f, f, N))
+    offres += offres_noise
     if rotate == True:
         offres = ndimage.rotate(offres, rot_angle, reshape=False, order=3, mode='nearest')
     if deform == True:
