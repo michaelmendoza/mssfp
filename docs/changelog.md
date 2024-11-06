@@ -7,11 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2024-11-05
+## [0.2.0] - 2024-11-06
 
 ### Added
-    - Updates to phantom generators (load_dataslice)
-    - Added print_dataset_info, get_dataset_info
+- Updates to phantom generators 
 
 ## [0.1.0] - 2024-11-05 - Initial development
 
