@@ -3,6 +3,8 @@
 /__pycache__
 *__pycache__
 *.ipynb_checkpoints
+.ipynb_checkpoints
+.DS_Store
 
 # Data files
 *.mp4

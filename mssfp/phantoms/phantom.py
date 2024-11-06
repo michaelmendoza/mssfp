@@ -28,6 +28,72 @@ def download_brain_data(path: str ='./data'):
         gdown.download_folder(url, quiet=True, output=f'{path}')
         print('Download complete.')
 
+def get_dataset_info(path_data='./data'):
+    '''
+    Gets information about the available brain atlas data dimensions
+
+    Parameters
+    ----------
+    path_data : string
+        File path for data
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+        - num_images: Number of .mnc files available
+        - num_slices: List of number of slices in each image file
+        - shapes: List of full shape tuples for each image file
+        - total_slices: Total number of slices across all images
+    '''
+    
+    # Download data if needed 
+    download_brain_data(path_data)
+
+    # Retrieve file names in dir
+    regex = regex='/*.mnc'
+    fileList = glob(path_data + regex)
+    mnc = [i for i in fileList if 'mnc' in i]
+    
+    # Get info for each image file
+    num_slices = []
+    shapes = []
+    total_slices = 0
+    
+    for file in mnc:
+        img = nib.load(file)
+        data_shape = img.shape
+        num_slices.append(data_shape[0])
+        shapes.append(data_shape)
+        total_slices += data_shape[0]
+    
+    info = {
+        'num_images': len(mnc),
+        'num_slices': num_slices,
+        'shapes': shapes,
+        'total_slices': total_slices
+    }
+    
+    return info
+
+def print_dataset_info(path_data='./data'):
+    '''
+    Prints a formatted summary of the brain atlas dataset dimensions
+    
+    Parameters
+    ----------
+    path_data : string
+        File path for data
+    '''
+    info = get_dataset_info(path_data)
+    
+    print(f"Dataset Summary:")
+    print(f"Number of image files: {info['num_images']}")
+    print(f"Total slices across all images: {info['total_slices']}")
+    print("\nPer-image details:")
+    for i in range(info['num_images']):
+        print(f"Image {i}: {info['num_slices'][i]} slices, shape {info['shapes'][i]}")
+
 def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3, 
         TR: float = 3e-3, TE: float = 3e-3 / 2, alpha = np.deg2rad(15), sigma = 0,
         path='./data', data_indices=[], rotate = False, deform = False):
@@ -102,38 +168,6 @@ def generate_brain_phantom(N: int = 128, f: float = 1 / 3e-3, path='./data', dat
     phantom = generate_3d_phantom(data, N=N, f=f, rotate=rotate, deform=deform)
     return phantom
 
-def load_dataslice(path_data = './data', image_index = 1, slice_index = 150):
-    '''
-    Loads brain atlas data in mnic1 data format 
-
-    Parameters
-    ----------
-    path_data : string
-        File path for data
-    image_index : int
-        Number of images
-    slice_index : int
-        Slice index
-    '''
-    
-    # Download data if needed 
-    download_brain_data(path_data)
-
-    # Retrieve file names in dir
-    regex = regex='/*.mnc'
-    fileList = glob(path_data + regex)
-    mnc = [i for i in fileList if 'mnc' in i]
-
-    # Make image_index is in valid range 
-    msg = "image_count should between 1-" + str(len(fileList))
-    assert image_index >= 1 and image_index <= len(fileList), msg
-
-    # Load data 
-    img = nib.load(mnc[image_index])
-    data = img.get_fdata()[slice_index, :, :].astype(int)    
-    data[np.where(data >= 4)] = 0 # Only use masks 0-3
-    return data.reshape((1, data.shape[0], data.shape[1]))
-
 def load_dataset(path_data = './data', file_count = None, padding = 50):
     '''
     Loads brain atlas data in mnic1 data format and returns an array of
@@ -170,6 +204,85 @@ def load_dataset(path_data = './data', file_count = None, padding = 50):
 
     atlas = atlas.astype(int)
     return atlas
+
+def load_dataslice(path_data='./data', image_index=0, slice_index=150):
+    '''
+    Loads brain atlas data in mnic1 data format 
+
+    Parameters
+    ----------
+    path_data : string
+        File path for data
+    image_index : int or tuple
+        Single image index or tuple of (start, end) for range of images
+        If tuple includes None, behaves like slice notation:
+        (None, end) -> [:end]
+        (start, None) -> [start:]
+        Uses 0-based indexing (e.g., first image is index 0)
+    slice_index : int or tuple 
+        Single slice index or tuple of (start, end) for range of slices
+        If tuple includes None, behaves like slice notation:
+        (None, end) -> [:end]
+        (start, None) -> [start:]
+        Uses 0-based indexing
+
+    Returns
+    -------
+    data : ndarray
+        Brain atlas data with shape (slices, height, width)
+        If single slice, shape is (1, height, width)
+    '''
+    
+    # Download data if needed 
+    download_brain_data(path_data)
+
+    # Retrieve file names in dir
+    regex = regex='/*.mnc'
+    fileList = glob(path_data + regex)
+    mnc = [i for i in fileList if 'mnc' in i]
+
+    # Handle single index or tuple for image_index
+    if isinstance(image_index, tuple):
+        start_img, end_img = image_index
+        # Handle None in image_index
+        if start_img is None:
+            start_img = 0  # Starting from first image (index 0)
+        if end_img is None:
+            end_img = len(fileList)  # Up to last image
+        msg = f"image_index range should be between 0-{len(fileList)-1}"
+        assert start_img >= 0 and end_img <= len(fileList), msg
+        image_indices = range(start_img, end_img)
+    else:
+        msg = f"image_index should be between 0-{len(fileList)-1}"
+        assert image_index >= 0 and image_index < len(fileList), msg
+        image_indices = [image_index]
+
+    # Create slice object from slice_index
+    if isinstance(slice_index, tuple):
+        start_slice, end_slice = slice_index
+        slice_range = slice(start_slice, end_slice)
+    else:
+        slice_range = slice(slice_index, slice_index + 1)
+
+    # Load and concatenate data for all specified images
+    data_list = []
+    for idx in image_indices:
+        img = nib.load(mnc[idx])
+        data = img.get_fdata()[slice_range, :, :].astype(int)
+        data[np.where(data >= 4)] = 0  # Only use masks 0-3
+        
+        # Ensure 3D shape even for single slice
+        if len(data.shape) == 2:
+            data = data.reshape(1, data.shape[0], data.shape[1])
+        data_list.append(data)
+    
+    # Concatenate along first axis if multiple images
+    if len(data_list) > 1:
+        data = np.concatenate(data_list, axis=0)
+    else:
+        data = data_list[0]
+
+    return data
 
 def generate_offres(N, f=300, rotate=True, deform=True):
     '''
