@@ -120,13 +120,7 @@ def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3,
         Folder Path for data defauls to './data'
     '''
 
-    # Load dataslice if data_indices are specifed, otherwise load complete dataset
-    if len(data_indices) == 0: 
-        data = load_dataset(path)
-    else:
-        data = load_dataslice(image_index = data_indices[0], slice_index = data_indices[1])
-
-    # Generate phantom
+    data = load_dataslice(path_data=path, image_index = data_indices[0], slice_index = data_indices[1])
     phantom = generate_3d_phantom(data, N=N, f=f, rotate=rotate, deform=deform)
     M0 = phantom['M0']
     T1 = phantom['t1_map']
@@ -144,7 +138,7 @@ def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1 / 3e-3,
     dataset = np.concatenate(dataset, axis=0)
     return { 'M': dataset, 'phantom': phantom }
 
-def generate_brain_phantom(N: int = 128, f: float = 1 / 3e-3, path='./data', data_indices=[], rotate = False, deform = False):
+def generate_brain_phantom(N: int = 128, f: float = 1 / 3e-3, path='./data', data_indices=[(None, None), (None, None)], rotate = False, deform = False):
     '''
     SSFP Dataset Generator
 
@@ -158,52 +152,9 @@ def generate_brain_phantom(N: int = 128, f: float = 1 / 3e-3, path='./data', dat
         Folder Path for data defauls to './data'
     '''
 
-    # Load dataslice if data_indices are specifed, otherwise load complete dataset
-    if len(data_indices) == 0: 
-        data = load_dataset(path)
-    else:
-        data = load_dataslice(image_index = data_indices[0], slice_index = data_indices[1])
-
-    # Generate phantom
+    data = load_dataslice(path_data=path, image_index = data_indices[0], slice_index = data_indices[1])
     phantom = generate_3d_phantom(data, N=N, f=f, rotate=rotate, deform=deform)
     return phantom
-
-def load_dataset(path_data = './data', file_count = None, padding = 50):
-    '''
-    Loads brain atlas data in mnic1 data format and returns an array of
-    size (slices, width, height)
-
-    Parameters
-    ----------
-    path_data : string
-        File path for data
-    file_count : int
-        Number of files to use for dataset (default: None -> All files)
-    padding : int
-        Number of slices to ignore loading for each file 
-    '''
-
-    # Download data if needed 
-    download_brain_data(path_data)
-    
-    # Retrieve file names in dir
-    regex = regex='/*.mnc'
-    fileList = glob(path_data + regex)
-    mnc = [i for i in fileList if 'mnc' in i]
-
-    atlas = []  
-    image_count = file_count if file_count else len(fileList)
-    for i in range(image_count):
-        img = nib.load(mnc[i])
-        data = img.get_fdata().astype(int)
-        data = data[padding:data.shape[0] - padding] # Remove end slices
-        data[np.where(data >= 4)] = 0 # Only use masks 0-3
-        atlas.append(data[..., None])
-    atlas = np.concatenate(atlas, axis=0)
-    atlas = np.squeeze(atlas)
-
-    atlas = atlas.astype(int)
-    return atlas
 
 def load_dataslice(path_data='./data', image_index=0, slice_index=150):
     '''
@@ -218,13 +169,11 @@ def load_dataslice(path_data='./data', image_index=0, slice_index=150):
         If tuple includes None, behaves like slice notation:
         (None, end) -> [:end]
         (start, None) -> [start:]
-        Uses 0-based indexing (e.g., first image is index 0)
     slice_index : int or tuple 
         Single slice index or tuple of (start, end) for range of slices
         If tuple includes None, behaves like slice notation:
         (None, end) -> [:end]
         (start, None) -> [start:]
-        Uses 0-based indexing
 
     Returns
     -------
@@ -284,6 +233,46 @@ def load_dataslice(path_data='./data', image_index=0, slice_index=150):
 
     return data
 
+def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, M0: float = 1, rotate=False, deform=False, noise_offset=100, noise_sigma=5):
+    ''' 
+    Phantom tissue generator
+
+    Parameters
+    ----------
+        data : Anatomical models generated from .mnc files
+        N : Size
+        f : Off-resonance
+        B0 : Magnetic field
+        M0 : Tissue magnetization
+    '''
+
+    print('Generating 3d phantom:' + str(data.shape))
+    slice_count = data.shape[0]
+
+    # Sample dataset and generate off-resonance 
+    sample = np.zeros((slice_count, N, N))
+    offres = np.zeros((slice_count, N, N))
+    for i in range(slice_count):
+        sample[i, :, :] = resize(data[i, :, :], (N, N))
+        offres[i, :, :] = generate_offres(N, f=f, rotate=rotate, deform=deform, noise_offset=noise_offset, noise_sigma=noise_sigma) 
+
+    # Generate ROI mask
+    roi_mask = (sample != 0)
+
+    # Generate t1/t2 maps
+    t1_map, t2_map = create_relaxation_maps(sample, slice_count, N, B0)
+
+    # Package Phantom 
+    phantom = {}
+    phantom['M0'] = M0 * roi_mask
+    phantom['t1_map'] = t1_map * roi_mask
+    phantom['t2_map'] = t2_map * roi_mask
+    phantom['offres'] = offres * roi_mask
+    phantom['mask'] = roi_mask
+    phantom['raw'] = sample
+
+    return phantom
+
 def generate_offres(N, f=300, rotate=True, deform=True, max_rot = 360, noise_offset=100, noise_sigma=5):
     '''
     Off-resonance generator
@@ -319,142 +308,32 @@ def generate_offres(N, f=300, rotate=True, deform=True, max_rot = 360, noise_off
         offres = ed.deform_random_grid(offres, sigma=10, points=3, order=3, mode='nearest')
     return offres
 
-def generate_3d_phantom(data, N: int = 128, f: float = 1 / 3e-3, B0: float = 3, M0: float = 1, rotate=False, deform=False):
-    ''' 
-    Phantom tissue generator
-
-    Parameters
-    ----------
-        data : Anatomical models generated from .mnc files
-        N : Size
-        f : Off-resonance
-        B0 : Magnetic field
-        M0 : Tissue magnetization
-    '''
-
-    print('Generating 3d phantom:' + str(data.shape))
-    slice_count = data.shape[0]
-
-    # Sample dataset and generate off-resonance 
-    sample = np.zeros((slice_count, N, N))
-    offres = np.zeros((slice_count, N, N))
-    for i in range(slice_count):
-        sample[i, :, :] = resize(data[i, :, :], (N, N))
-        offres[i, :, :] = generate_offres(N, f=f, rotate=rotate, deform=deform) 
-
-    # Generate ROI mask
-    roi_mask = (sample != 0)
-
-    # Generate t1/t2 maps
-    params = mr_relaxation_parameters(B0)
+def create_relaxation_maps(sample, slice_count, N, B0):
+    """
+    Creates T1 and T2 relaxation maps for different tissue types.
+    
+    Args:
+        sample: Array containing tissue type identifiers
+        slice_count: Number of slices
+        N: Dimension size
+        B0: Magnetic field strength
+        
+    Returns:
+        t1_map, t2_map: Arrays containing T1 and T2 values for each voxel
+    """
+    # Tissue parameters mapping: ID -> [T1 formula, T2 value]
+    tissue_params = {
+        1: ['csf', lambda B: 4.2, lambda B: 1.99],
+        2: ['gray-matter', lambda B: 0.857 * (B ** 0.376), lambda B: 0.1],
+        3: ['white-matter', lambda B: 0.583 * (B ** 0.382), lambda B: 0.08]
+    }
+    
     t1_map = np.zeros((slice_count, N, N))
     t2_map = np.zeros((slice_count, N, N))
-    t1_map[np.where(sample == 1)] = params['csf'][0]
-    t1_map[np.where(sample == 2)] = params['gray-matter'][0]
-    t1_map[np.where(sample == 3)] = params['white-matter'][0]
-    t2_map[np.where(sample == 1)] = params['csf'][1]
-    t2_map[np.where(sample == 2)] = params['gray-matter'][1]
-    t2_map[np.where(sample == 3)] = params['white-matter'][1]
-
-    # Package Phantom 
-    phantom = {}
-    phantom['M0'] = M0 * roi_mask
-    phantom['t1_map'] = t1_map * roi_mask
-    phantom['t2_map'] = t2_map * roi_mask
-    phantom['offres'] = offres * roi_mask
-    phantom['mask'] = roi_mask
-    phantom['raw'] = sample
-
-    return phantom
-
-def generate_phantom(bw_input, alpha, img_no=0, N=128, TR=3e-3, d_flip=10,
-            offres=None, B0=3, M0=1):
-    ''' 
-    phantom generator
-
-    Parameters
-    ----------
-    bw_input : 
-    alpha :
-    img_no :
-    N : 
-    TR :
-    d_flip :
-    offres :
-    B0 :
-    M0 : 
-    '''
-
-    assert img_no >= 0 and img_no < bw_input.shape[0], "Image index out of bound"
-
-    # these are values from brain web.
-    height = bw_input.shape[1]  # X
-    width = bw_input.shape[2]  # Y
-    dim = 6
-
-    flip_range = np.linspace(alpha - np.deg2rad(d_flip), alpha + np.deg2rad(d_flip), N, endpoint=True)
-    flip_map = np.reshape(np.tile(flip_range, N), [N, N]).transpose()
     
-    # This is the default off-res map +-300Hz
-    if offres is None:
-        offres, _ = np.meshgrid(np.linspace(-1 / TR, 1 / TR, N), np.linspace(-1 / TR, 1 / TR, N))
-    else:
-        offres = offres
-
-    sample = bw_input[img_no, :, :]
-
-    sample = np.reshape(sample, (bw_input.shape[1], bw_input.shape[2]))
-    sample = resize(sample, (N, N))
-    roi_mask = (sample != 0)
-    ph = np.zeros((N, N, dim))
-
-    params = mr_relaxation_parameters(B0)
-    t1_map = np.zeros((N, N))
-    t2_map = np.zeros((N, N))
-    t1_map[np.where(sample == 1)] = params['csf'][0]
-    t1_map[np.where(sample == 2)] = params['gray-matter'][0]
-    t1_map[np.where(sample == 3)] = params['white-matter'][0]
-    t2_map[np.where(sample == 1)] = params['csf'][1]
-    t2_map[np.where(sample == 2)] = params['gray-matter'][1]
-    t2_map[np.where(sample == 3)] = params['white-matter'][1]
-
-    ph[:, :, 0] = M0 * roi_mask
-    ph[:, :, 1] = t1_map * roi_mask
-    ph[:, :, 2] = t2_map * roi_mask
-    ph[:, :, 3] = flip_map * roi_mask
-    ph[:, :, 4] = offres * roi_mask
-    ph[:, :, 5] = sample #raw data
-
-    return ph
-
-def get_phantom_parameters(phantom):
-    assert phantom.shape[2] == 6, 'Last axes has to be 6!!'
-
-    M0, T1, T2, flip_angle, df, sample = phantom[:, :, 0], \
-                                         phantom[:, :, 1], \
-                                         phantom[:, :, 2], \
-                                         phantom[:, :, 3], \
-                                         phantom[:, :, 4], \
-                                         phantom[:, :, 5]
-
-    return M0, T1, T2, flip_angle, df, sample
-
-
-def mr_relaxation_parameters(B0):
-    '''Returns MR relaxation parameters for certain tissues.
-
-    Returns
-    -------
-    params : dict
-        Gives entries as [t1, t2]
-
-    Notes
-    -----
-        Model: T1 = A * B0^C will be used. 
-    '''
-
-    t1_t2 = dict()
-    t1_t2['csf'] = [4.2, 1.99] #labelled T1 and T2 map for CSF
-    t1_t2['gray-matter'] = [.857 * (B0 ** .376), .1] #labelled T1 and T2 map for Gray Matter
-    t1_t2['white-matter'] = [.583 * (B0 ** .382), .08] #labelled T1 and T2 map for White Matter
-    return t1_t2
+    for tissue_id, (name, t1_func, t2_func) in tissue_params.items():
+        mask = (sample == tissue_id)
+        t1_map[mask] = t1_func(B0)
+        t2_map[mask] = t2_func(B0)
+        
+    return t1_map, t2_map
