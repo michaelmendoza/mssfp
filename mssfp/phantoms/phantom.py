@@ -36,13 +36,13 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
                           path: str = './data'):
 
     if phantom_type == 'brain':
+        slices = 1 # Using 3D datasets instead of 2d slices 
         dataset = brain.BrainDataset(path)
         seg = dataset.load_slice(data_indices[0], data_indices[1])
         generator = brain.PhantomGenerator()
         phantom = generator.generate_3d_phantom(seg, N=shape, f=f, rotate=useRotate, deform=useDeform, 
                                             offres_offset=offres_offset, offres_sigma=offres_sigma)
     else:
-        slices = 1 # Using 3D datasets instead of 2d slices 
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
         phantom = simple.generate_phantom(seg, f=f, useRotate=useRotate, useDeform=useDeform, offres_offset=offres_offset, offres_sigma=offres_sigma)
 
