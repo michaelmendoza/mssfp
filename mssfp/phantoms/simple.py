@@ -1,11 +1,8 @@
 import numpy as np
 import math
-import elasticdeform as ed
 from typing import Tuple, Any, List, Union
-from tqdm import tqdm
-from scipy import ndimage
 from enum import Enum
-from ..simulations import ssfp, add_noise_gaussian
+from . import fieldmap
 
 # T1/T2 values taken from https://mri-q.com/why-is-t1--t2.html
 # Tissue Parameter -> tissue_id: (tissue_name, T1, T2, f0)
@@ -125,23 +122,6 @@ def generate_segmentation_masks( shape: int = 256, ids: List[int] = [1, 2, 3, 4]
     
     return output
 
-def generate_offres(shape: Tuple[int, ...], f: float = 300, useRotate: bool = True, 
-                    useDeform: bool = True, rotation: float = 15,
-                    noise_offset: float = 100, noise_sigma: float = 5) -> np.ndarray:
-    """Generate off-resonance map with optional rotation and deformation."""
-    x, y = np.meshgrid(np.linspace(-f, f, shape[0]), np.linspace(-f, f, shape[1]))
-    offres = x + np.random.normal(noise_offset * np.random.uniform(-1, 1), 
-                                noise_sigma, size=shape)
-    
-    if useRotate:
-        rot_angle = rotation * np.random.uniform(-1, 1)
-        offres = ndimage.rotate(offres, rot_angle, reshape=False, order=3, mode='nearest')
-        
-    if useDeform:
-        offres = ed.deform_random_grid(offres, sigma=10, points=3, order=3, mode='nearest')
-        
-    return offres
-
 def generate_phantom(seg: np.ndarray, f: float = 1/3e-3, B0: float = 3, M0: float = 1,
                         useRotate: bool = False, useDeform: bool = False,
                         offres_offset: float = 100, offres_sigma: float = 5):
@@ -160,8 +140,8 @@ def generate_phantom(seg: np.ndarray, f: float = 1/3e-3, B0: float = 3, M0: floa
             T1[maskIndices] = t1
             T2[maskIndices] = t2
             F0[maskIndices] = f0
-        
-    field_map = generate_offres(_shape, f=f, useRotate=useRotate, useDeform=useDeform, rotation=15, noise_offset=offres_offset, noise_sigma=offres_sigma)
+    
+    field_map = fieldmap.generate_fieldmap(_shape, f=f, useRotate=useRotate, useDeform=useDeform, rotation=15, noise_offset=offres_offset, noise_sigma=offres_sigma)
 
     from .phantom import PhantomData
     return PhantomData(M0=M0*mask, t1=T1, t2=T2, f0=F0, fieldmap=field_map, seg=seg, mask=mask)

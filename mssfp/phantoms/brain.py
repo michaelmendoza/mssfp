@@ -1,15 +1,10 @@
-import elasticdeform as ed
 import gdown
-import math
 import nibabel as nib
 import numpy as np
-from dataclasses import dataclass, asdict
 from PIL import Image
 from glob import glob
-from scipy import ndimage
-from tqdm import tqdm
-from typing import Dict, List, Optional, Tuple, Union, Callable
-from ..simulations import ssfp, add_noise_gaussian
+from typing import Dict, Optional, Tuple, Union
+from . import fieldmap
 
 class TissueParameters:
     """Tissue relaxation parameters for different tissue types."""
@@ -119,24 +114,6 @@ class PhantomGenerator:
         """Resize a mask image using nearest neighbor interpolation."""
         return np.array(Image.fromarray(np.squeeze(img).astype(np.uint8)).resize(size, Image.NEAREST))
 
-    @staticmethod
-    def generate_offres(N: int, f: float = 300, rotate: bool = True, 
-                       deform: bool = True, max_rot: float = 360,
-                       noise_offset: float = 100, noise_sigma: float = 5) -> np.ndarray:
-        """Generate off-resonance map with optional rotation and deformation."""
-        x, y = np.meshgrid(np.linspace(-f, f, N), np.linspace(-f, f, N))
-        offres = x + np.random.normal(noise_offset * np.random.uniform(-1, 1), 
-                                    noise_sigma, size=(N, N))
-        
-        if rotate:
-            rot_angle = max_rot * np.random.uniform(-1, 1)
-            offres = ndimage.rotate(offres, rot_angle, reshape=False, order=3, mode='nearest')
-            
-        if deform:
-            offres = ed.deform_random_grid(offres, sigma=10, points=3, order=3, mode='nearest')
-            
-        return offres
-
     def generate_3d_phantom(self, data: np.ndarray, N: int = 128, 
                           f: float = 1/3e-3, B0: float = 3, M0: float = 1,
                           rotate: bool = False, deform: bool = False,
@@ -152,7 +129,8 @@ class PhantomGenerator:
         # Process each slice
         for i in range(slice_count):
             sample[i] = self.resize_mask(data[i], (N, N))
-            offres[i] = self.generate_offres(N, f, rotate, deform, 
+            offres[i] = fieldmap.generate_fieldmap((N, N), f, rotate, deform, 
+                                           rotation = 360,
                                            noise_offset=offres_offset, 
                                            noise_sigma=offres_sigma)
 
@@ -178,31 +156,3 @@ class PhantomGenerator:
             mask=roi_mask,
             seg=sample
         )
-
-def generate_ssfp_dataset(N: int = 128, npcs: int = 8, f: float = 1/3e-3,
-                         TR: float = 3e-3, TE: float = 1.5e-3, 
-                         alpha: float = np.deg2rad(15), sigma: float = 0,
-                         path: str = './data', 
-                         data_indices: Tuple[int, int] = (0, 150),
-                         rotate: bool = False, deform: bool = False,
-                         offres_offset: float = 100, offset_sigma: float = 5) -> Dict:
-    """Generate SSFP dataset with specified parameters."""
-    dataset = BrainDataset(path)
-    data = dataset.load_slice(data_indices[0], data_indices[1])
-    
-    generator = PhantomGenerator()
-    phantom = generator.generate_3d_phantom(data, N=N, f=f, rotate=rotate, deform=deform, 
-                                            offres_offset=offres_offset, offres_sigma=offset_sigma)
-    
-    # Simulate SSFP with phantom data
-    pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
-    M_list = []
-    
-    for i in tqdm(range(data.shape[0])):
-        M = ssfp(phantom.t1[i], phantom.t2[i], TR, TE, alpha,
-                 field_map=phantom.fieldmap[i], dphi=pcs, M0=phantom.M0[i])
-        if sigma > 0:
-            M = add_noise_gaussian(M, sigma=sigma)
-        M_list.append(M[None, ...])
-    
-    return { 'M': np.concatenate(M_list, axis=0), **asdict(phantom) }

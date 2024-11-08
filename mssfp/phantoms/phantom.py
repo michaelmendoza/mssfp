@@ -42,6 +42,7 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
         phantom = generator.generate_3d_phantom(seg, N=shape, f=f, rotate=useRotate, deform=useDeform, 
                                             offres_offset=offres_offset, offres_sigma=offres_sigma)
     else:
+        slices = 1 # Using 3D datasets instead of 2d slices 
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
         phantom = simple.generate_phantom(seg, f=f, useRotate=useRotate, useDeform=useDeform, offres_offset=offres_offset, offres_sigma=offres_sigma)
 
@@ -50,9 +51,11 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
     pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
     for i in tqdm(range(slices)):
         M = ssfp(phantom.t1, phantom.t2, TR, TE, alpha, f0=phantom.f0, field_map=phantom.fieldmap, dphi=pcs, M0=phantom.M0)
-
-        M = add_noise_gaussian(M, sigma=sigma)
+        if sigma > 0:
+            M = add_noise_gaussian(M, sigma=sigma)
         dataset.append(M[None, ...])
 
     dataset = np.concatenate(dataset, axis=0)
+    if phantom_type == 'brain':
+        dataset = dataset[0]
     return { 'M': dataset, **asdict(phantom) }
