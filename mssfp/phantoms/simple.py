@@ -1,8 +1,10 @@
-from typing import Tuple, Any, List, Union
-from enum import Enum
-from tqdm import tqdm
-import math
 import numpy as np
+import math
+import elasticdeform as ed
+from typing import Tuple, Any, List, Union
+from tqdm import tqdm
+from scipy import ndimage
+from enum import Enum
 from ..simulations import ssfp, add_noise_gaussian
 
 # T1/T2 values taken from https://mri-q.com/why-is-t1--t2.html
@@ -29,7 +31,7 @@ class PhantomShape(Enum):
     BLOCK = 'block'
     CIRCLE = 'circle'
 
-def generate_line_phantom(length: int = 256, id: int = 1, padding: int = 32):
+def generate_line_segmentation_mask(length: int = 256, id: int = 1, padding: int = 32):
     s = (1, length) 
     line = np.ones(s) * id
 
@@ -41,7 +43,7 @@ def generate_line_phantom(length: int = 256, id: int = 1, padding: int = 32):
     line.astype(int)
     return line 
 
-def generate_phantom( shape: int = 256, ids: List[int] = [1, 2, 3, 4], 
+def generate_segmentation_masks( shape: int = 256, ids: List[int] = [1, 2, 3, 4], 
                      padding: int = 8, phantom_type: Union[PhantomShape, str] = PhantomShape.BLOCK) -> np.ndarray:
     """Generate a 2D array filled with shapes of specified values.
     
@@ -62,7 +64,7 @@ def generate_phantom( shape: int = 256, ids: List[int] = [1, 2, 3, 4],
     ids = [id for id in ids if id != 0]
     
     if phantom_type == PhantomShape.LINE:
-        return generate_line_phantom(length=shape, id=ids[0], padding=padding)
+        return generate_line_segmentation_mask(length=shape, id=ids[0], padding=padding)
 
     if not ids:
         return np.zeros((shape, shape))
@@ -123,36 +125,43 @@ def generate_phantom( shape: int = 256, ids: List[int] = [1, 2, 3, 4],
     
     return output
 
-def generate_ssfp_phantom(phantom_type: str = 'block', shape: int = 256, ids: List[int] = [1, 2, 3, 4], padding: int = 8, 
-                          slices = 1, TR = 3e-3, TE = 3e-3 / 2, alpha = np.deg2rad(15), npcs = 4, sigma = 0.005, f: float = 4/3e-3):
+def generate_offres(shape: Tuple[int, ...], f: float = 300, useRotate: bool = True, 
+                    useDeform: bool = True, rotation: float = 15,
+                    noise_offset: float = 100, noise_sigma: float = 5) -> np.ndarray:
+    """Generate off-resonance map with optional rotation and deformation."""
+    x, y = np.meshgrid(np.linspace(-f, f, shape[0]), np.linspace(-f, f, shape[1]))
+    offres = x + np.random.normal(noise_offset * np.random.uniform(-1, 1), 
+                                noise_sigma, size=shape)
+    
+    if useRotate:
+        rot_angle = rotation * np.random.uniform(-1, 1)
+        offres = ndimage.rotate(offres, rot_angle, reshape=False, order=3, mode='nearest')
+        
+    if useDeform:
+        offres = ed.deform_random_grid(offres, sigma=10, points=3, order=3, mode='nearest')
+        
+    return offres
 
-    phantom = generate_phantom(shape, ids, padding, phantom_type)
-    _shape = phantom.shape
-    mask = (phantom != 0) * 1
+def generate_phantom(seg: np.ndarray, f: float = 1/3e-3, B0: float = 3, M0: float = 1,
+                        useRotate: bool = False, useDeform: bool = False,
+                        offres_offset: float = 100, offres_sigma: float = 5):
+    """Generate 3D phantom with mask, t1 map, t2 map, f0 mpa, field map, and segmentation mask."""
 
-    M0 = mask
+    _shape = seg.shape
+    mask = (seg != 0) * 1
+
     T1 = np.zeros((_shape[0], _shape[1]))
     T2 = np.zeros((_shape[0], _shape[1]))
     F0 = np.zeros((_shape[0], _shape[1]))
 
-    print(mask.shape, T1.shape)
     for tissue_id in tissue_parameters:
-            mask = (phantom == tissue_id)
+            maskIndices = (seg == tissue_id)
             t1, t2, f0 = get_tissue_parameters(tissue_id)
-            T1[mask] = t1
-            T2[mask] = t2
-            F0[mask] = f0
+            T1[maskIndices] = t1
+            T2[maskIndices] = t2
+            F0[maskIndices] = f0
         
-    field_map = np.linspace(-f, f, _shape[1])
-    field_map = np.tile(field_map, (_shape[0], 1))
+    field_map = generate_offres(_shape, f=f, useRotate=useRotate, useDeform=useDeform, rotation=15, noise_offset=offres_offset, noise_sigma=offres_sigma)
 
-    # Simulation SSFP with phantom data 
-    dataset = []
-    pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
-    for i in tqdm(range(slices)):
-        M = ssfp(T1, T2, TR, TE, alpha, f0=F0, field_map=field_map, dphi=pcs, M0=M0)
-        M = add_noise_gaussian(M, sigma=sigma)
-        dataset.append(M[None, ...])
-
-    dataset = np.concatenate(dataset, axis=0)
-    return { 'M': dataset, 't1': T1, 't2': T2, 'f0': F0, 'field_map': field_map, 'phantom': phantom }
+    from .phantom import PhantomData
+    return PhantomData(M0=M0*mask, t1=T1, t2=T2, f0=F0, fieldmap=field_map, seg=seg, mask=mask)

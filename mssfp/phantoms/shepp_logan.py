@@ -1,6 +1,6 @@
 import numpy as np
 
-def shepp_logan(N):
+def generate_shepp_logan(N):
     """Generates a Shepp Logan phantom with a given shape and dtype.
     Args:
         shape (tuple of ints): shape, can be of length 2 or 3.

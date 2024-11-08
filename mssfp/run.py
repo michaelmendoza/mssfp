@@ -4,7 +4,7 @@ from skimage.metrics import normalized_root_mse
 from skimage.restoration import unwrap_phase
 from time import perf_counter
 
-from .phantoms.phantom import *
+from .phantoms.brain import *
 #from ssfp import planet
 
 data = generate_ssfp_dataset(path='../data')
