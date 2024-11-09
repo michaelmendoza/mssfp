@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Updates to phantom generators
-  - pdated slice selection in load_dataslice
+  - Updated slice selection in load_dataslice
   - Added print_dataset_info, get_dataset_info
   - Added noise option off-resonance field map simulation 
+  - Cleaned up and refactored phantom code
 
 ## [0.0.1] - 2024-11-05 - Initial development
 
