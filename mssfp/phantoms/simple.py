@@ -122,9 +122,8 @@ def generate_segmentation_masks( shape: int = 256, ids: List[int] = [1, 2, 3, 4]
     
     return output
 
-def generate_phantom(seg: np.ndarray, f: float = 1/3e-3, B0: float = 3, M0: float = 1,
-                        useRotate: bool = False, useDeform: bool = False,
-                        offres_offset: float = 100, offres_sigma: float = 5):
+def generate_phantom(seg: np.ndarray, f: float = 0, df: float = 1/3e-3, fn_offset: float = 100, fn_sigma: float = 5, 
+                     rotation: float =15, useRotate: bool = False, useDeform: bool = False, B0: float = 3, M0: float = 1):
     """Generate 3D phantom with mask, t1 map, t2 map, f0 mpa, field map, and segmentation mask."""
 
     _shape = seg.shape
@@ -141,7 +140,7 @@ def generate_phantom(seg: np.ndarray, f: float = 1/3e-3, B0: float = 3, M0: floa
             T2[maskIndices] = t2
             F0[maskIndices] = f0
     
-    field_map = fieldmap.generate_fieldmap(_shape, f=f, useRotate=useRotate, useDeform=useDeform, rotation=15, noise_offset=offres_offset, noise_sigma=offres_sigma)
+    field_map = fieldmap.generate_fieldmap(_shape, f=f, df=df, useRotate=useRotate, useDeform=useDeform, rotation=rotation, fn_offset=fn_offset, fn_sigma=fn_sigma)
 
     from .phantom import PhantomData
     return PhantomData(M0=M0*mask, t1=T1, t2=T2, f0=F0, fieldmap=field_map, seg=seg, mask=mask)

@@ -27,12 +27,14 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
                           alpha = np.deg2rad(15), 
                           npcs = 4, 
                           sigma = 0.005, 
-                          f: float = 1/3e-3,
+                          f: float = 0,
+                          df: float = 1/3e-3,
+                          fn_offset: float = 0, 
+                          fn_sigma: float = 0,
+                          rotation: float = 0,
                           useRotate: bool = False, 
                           useDeform: bool = False, 
-                          offres_offset: float = 0, 
-                          offres_sigma: float = 0,
-                          data_indices: Tuple[int, int] = (0, 150),
+                          data_indices: Tuple[Any, Any] = ((None, None), (None,None)),
                           path: str = './data'):
 
     if phantom_type == 'brain':
@@ -40,21 +42,22 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
         dataset = brain.BrainDataset(path)
         seg = dataset.load_slice(data_indices[0], data_indices[1])
         generator = brain.PhantomGenerator()
-        phantom = generator.generate_3d_phantom(seg, N=shape, f=f, rotate=useRotate, deform=useDeform, 
-                                            offres_offset=offres_offset, offres_sigma=offres_sigma)
+        phantom = generator.generate_3d_phantom(seg, N=shape, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+                                                rotation=rotation, rotate=useRotate, deform=useDeform)
     else:
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
-        phantom = simple.generate_phantom(seg, f=f, useRotate=useRotate, useDeform=useDeform, offres_offset=offres_offset, offres_sigma=offres_sigma)
+        phantom = simple.generate_phantom(seg, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+                                          rotation=rotation, useRotate=useRotate, useDeform=useDeform)
 
     # Simulation SSFP with phantom data 
     dataset = []
     pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
     for i in tqdm(range(slices)):
-        M = ssfp(phantom.t1, phantom.t2, TR, TE, alpha, f0=phantom.f0, field_map=phantom.fieldmap, dphi=pcs, M0=phantom.M0)
+        M = ssfp(phantom.t1, phantom.t2, TR, TE, alpha, f0=phantom.f0, field_map=phantom.fieldmap, dphi=pcs, M0=phantom.M0, useSqueeze=False)
         if sigma > 0:
             M = add_noise_gaussian(M, sigma=sigma)
         dataset.append(M[None, ...])
-
+        
     dataset = np.concatenate(dataset, axis=0)
     if phantom_type == 'brain':
         dataset = dataset[0]
