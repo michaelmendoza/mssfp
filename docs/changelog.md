@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added print_dataset_info, get_dataset_info
   - Added noise option off-resonance field map simulation 
   - Cleaned up and refactored phantom code
+  - phantom.generate_ssfp_dataset() can be used to generate a 3d ssfp dataset from a various phantom types
 
 ## [0.0.1] - 2024-11-05 - Initial development
 
