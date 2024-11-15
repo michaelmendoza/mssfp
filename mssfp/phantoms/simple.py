@@ -122,25 +122,33 @@ def generate_segmentation_masks( shape: int = 256, ids: List[int] = [1, 2, 3, 4]
     
     return output
 
-def generate_phantom(seg: np.ndarray, f: float = 0, df: float = 1/3e-3, fn_offset: float = 100, fn_sigma: float = 5, 
+def generate_phantom(seg: np.ndarray, slices: int = 1, f: float = 0, df: float = 1/3e-3, fn_offset: float = 100, fn_sigma: float = 5, 
                      rotation: float =15, useRotate: bool = False, useDeform: bool = False, B0: float = 3, M0: float = 1):
     """Generate 3D phantom with mask, t1 map, t2 map, f0 mpa, field map, and segmentation mask."""
 
-    _shape = seg.shape
+    # Initialize arrays
+    _shape = (slices, seg.shape[0], seg.shape[1]) # seg is 2d (hieght, width)
+    T1 = np.zeros(_shape)
+    T2 = np.zeros(_shape)
+    F0 = np.zeros(_shape)
+    field_map = np.zeros(_shape)
+
+    # Generate mask
     mask = (seg != 0) * 1
 
-    T1 = np.zeros((_shape[0], _shape[1]))
-    T2 = np.zeros((_shape[0], _shape[1]))
-    F0 = np.zeros((_shape[0], _shape[1]))
-
-    for tissue_id in tissue_parameters:
-            maskIndices = (seg == tissue_id)
-            t1, t2, f0 = get_tissue_parameters(tissue_id)
-            T1[maskIndices] = t1
-            T2[maskIndices] = t2
-            F0[maskIndices] = f0
+    # Generate T1, T2, and F0 maps
+    for i in range(slices):
+        for tissue_id in tissue_parameters:
+                maskIndices = (seg == tissue_id)
+                t1, t2, f0 = get_tissue_parameters(tissue_id)
+                T1[i, maskIndices] = t1
+                T2[i, maskIndices] = t2
+                F0[i, maskIndices] = f0
     
-    field_map = fieldmap.generate_fieldmap(_shape, f=f, df=df, useRotate=useRotate, useDeform=useDeform, rotation=rotation, fn_offset=fn_offset, fn_sigma=fn_sigma)
+    # Generate field map
+    for i in range(slices):
+        field_map[i, :] = fieldmap.generate_fieldmap(seg.shape, f=f, df=df, useRotate=useRotate, useDeform=useDeform, rotation=rotation, fn_offset=fn_offset, fn_sigma=fn_sigma)
 
+    # Create phantom data object
     from .phantom import PhantomData
     return PhantomData(M0=M0*mask, t1=T1, t2=T2, f0=F0, fieldmap=field_map, seg=seg, mask=mask)

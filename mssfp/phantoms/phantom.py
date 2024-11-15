@@ -37,28 +37,31 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
                           data_indices: Tuple[Any, Any] = ((None, None), (None,None)),
                           path: str = './data'):
 
+    # Generate phantom
+    print('Generating phantom...')
+
     if phantom_type == 'brain':
         slices = 1 # Using 3D datasets instead of 2d slices 
         dataset = brain.BrainDataset(path)
         seg = dataset.load_slice(data_indices[0], data_indices[1])
         generator = brain.PhantomGenerator()
         phantom = generator.generate_3d_phantom(seg, N=shape, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
-                                                rotation=rotation, rotate=useRotate, deform=useDeform)
+                                                rotation=rotation, useRotate=useRotate, useDeform=useDeform)
     else:
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
-        phantom = simple.generate_phantom(seg, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+        phantom = simple.generate_phantom(seg, slices=slices, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
                                           rotation=rotation, useRotate=useRotate, useDeform=useDeform)
+
+    print('Generating SSFP dataset...')
 
     # Simulation SSFP with phantom data 
     dataset = []
     pcs = np.linspace(0, 2 * math.pi, npcs, endpoint=False)
-    for i in tqdm(range(slices)):
-        M = ssfp(phantom.t1, phantom.t2, TR, TE, alpha, f0=phantom.f0, field_map=phantom.fieldmap, dphi=pcs, M0=phantom.M0, useSqueeze=False)
-        if sigma > 0:
-            M = add_noise_gaussian(M, sigma=sigma)
-        dataset.append(M[None, ...])
-        
-    dataset = np.concatenate(dataset, axis=0)
-    if phantom_type == 'brain':
-        dataset = dataset[0]
-    return { 'M': dataset, **asdict(phantom) }
+    M = ssfp(phantom.t1, phantom.t2, TR, TE, alpha, f0=phantom.f0, field_map=phantom.fieldmap, dphi=pcs, M0=phantom.M0, useSqueeze=False)
+    if sigma > 0:
+        M = add_noise_gaussian(M, sigma=sigma)
+
+    print('Dataset complete.')
+    print(f'Dataset shape: {M.shape}')
+
+    return { 'M': M, **asdict(phantom) }

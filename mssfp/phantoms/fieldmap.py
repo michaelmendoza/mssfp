@@ -19,7 +19,7 @@ def generate_fieldmap(shape: Tuple[int, ...], f: float = 0, df: float = 300, fn_
     # Generate linear field map
     f0 = f-df
     f1 = f+df
-    print(f'Generating fieldmap: {f0, f1, shape[1]}')
+    #print(f'Generating fieldmap: {f0, f1, shape[1]}')
     x, _ = np.meshgrid(np.linspace(f0, f1, shape[0]), np.linspace(f0, f1, shape[1]))
 
     # Add noise
