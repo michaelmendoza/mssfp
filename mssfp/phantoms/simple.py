@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from typing import Tuple, Any, List, Union
+from typing import Tuple, Any, List, Union, Optional
 from enum import Enum
 from . import fieldmap
 
@@ -18,9 +18,12 @@ tissue_parameters = {
     8: ('proteins', 0.250, 0.001, 0)
 }
 
-def get_tissue_parameters(tissue_id: int) -> Tuple[float, float, float]:
+def get_tissue_parameters(tissue_id: int, tissues: Optional[Union[dict, None]] = None) -> Tuple[float, float, float]:
     """Get T1 and T2 relaxation times for a given tissue ID."""
-    _, t1, t2, f0 = tissue_parameters[tissue_id]
+    if tissues is None:
+        _, t1, t2, f0 = tissue_parameters[tissue_id]
+    else:
+        _,t1, t2, f0 = tissues[tissue_id]
     return t1, t2, f0
 
 class PhantomShape(Enum):
@@ -40,8 +43,10 @@ def generate_line_segmentation_mask(length: int = 256, id: int = 1, padding: int
     line.astype(int)
     return line 
 
-def generate_segmentation_masks( shape: int = 256, ids: List[int] = [1, 2, 3, 4], 
-                     padding: int = 8, phantom_type: Union[PhantomShape, str] = PhantomShape.BLOCK) -> np.ndarray:
+def generate_segmentation_masks( shape: int = 256, 
+                                ids: List[int] = [1, 2, 3, 4], 
+                                padding: int = 8, 
+                                phantom_type: Union[PhantomShape, str] = PhantomShape.BLOCK) -> np.ndarray:
     """Generate a 2D array filled with shapes of specified values.
     
     Args:
@@ -123,7 +128,8 @@ def generate_segmentation_masks( shape: int = 256, ids: List[int] = [1, 2, 3, 4]
     return output
 
 def generate_phantom(seg: np.ndarray, slices: int = 1, f: float = 0, df: float = 1/3e-3, fn_offset: float = 100, fn_sigma: float = 5, 
-                     rotation: float =15, useRotate: bool = False, useDeform: bool = False, B0: float = 3, M0: float = 1):
+                     rotation: float =15, useRotate: bool = False, useDeform: bool = False, B0: float = 3, M0: float = 1,
+                     tissues: Optional[Union[dict, None]] = None):
     """Generate 3D phantom with mask, t1 map, t2 map, f0 mpa, field map, and segmentation mask."""
 
     # Initialize arrays
@@ -136,11 +142,15 @@ def generate_phantom(seg: np.ndarray, slices: int = 1, f: float = 0, df: float =
     # Generate mask
     mask = (seg != 0) * 1
 
+    # Set tissues
+    if tissues is None:
+        tissues = tissue_parameters
+
     # Generate T1, T2, and F0 maps
     for i in range(slices):
-        for tissue_id in tissue_parameters:
+        for tissue_id in tissues:
                 maskIndices = (seg == tissue_id)
-                t1, t2, f0 = get_tissue_parameters(tissue_id)
+                t1, t2, f0 = get_tissue_parameters(tissue_id, tissues=tissues)
                 T1[i, maskIndices] = t1
                 T2[i, maskIndices] = t2
                 F0[i, maskIndices] = f0

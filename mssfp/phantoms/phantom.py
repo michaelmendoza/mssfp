@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from typing import Tuple, Any, List, Union
+from typing import Tuple, Any, List, Union, Optional
 from tqdm import tqdm
 from dataclasses import dataclass, asdict
 from . import simple, brain
@@ -20,6 +20,7 @@ class PhantomData:
 def generate_ssfp_dataset(phantom_type: str = 'block', 
                           shape: int = 256, 
                           ids: List[int] = [1, 2, 3, 4], 
+                          tissues: Optional[Union[dict, None]] = None,
                           padding: int = 8, 
                           slices = 1, 
                           TR = 3e-3, 
@@ -50,7 +51,7 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
     else:
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
         phantom = simple.generate_phantom(seg, slices=slices, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
-                                          rotation=rotation, useRotate=useRotate, useDeform=useDeform)
+                                          rotation=rotation, useRotate=useRotate, useDeform=useDeform, tissues=tissues)
 
     print('Generating SSFP dataset...')
 

@@ -7,7 +7,7 @@ def ssfp(T1: Union[float, np.ndarray],
          T2: Union[float, np.ndarray],
          TR: float,
          TE: float,
-         alpha: float,
+         alpha: Union[float, np.ndarray],  # Modified to accept array of flip angles
          dphi: Union[float, np.ndarray] = (0,),
          field_map: Union[float, np.ndarray] = 0,
          M0: Union[float, np.ndarray] = 1,
@@ -26,8 +26,9 @@ def ssfp(T1: Union[float, np.ndarray],
         repetition time (in seconds).
     TE : float
         echo time (in seconds).
-    alpha : float 
-        flip angle (in rad).
+    alpha : float or np.ndarray
+        flip angle (in rad). Can be an array to specify different flip angles
+        for different spatial locations.
     dphi : float or np.ndarray, optional
         Linear phase-cycle increment (in rad).
     field_map : float or np.ndarray, optional
@@ -49,8 +50,8 @@ def ssfp(T1: Union[float, np.ndarray],
     """
 
     # Convert inputs to arrays and adjust field map convention
-    inputs = [T1, T2, f0, -field_map, M0]
-    T1, T2,  f0, field_map, M0 = map(np.asarray, inputs)
+    inputs = [T1, T2, f0, -field_map, M0, alpha]  # Added alpha to inputs list
+    T1, T2, f0, field_map, M0, alpha = map(np.asarray, inputs)
     dphi = np.asarray(dphi).ravel()
 
     # Determine the broadcasted shape and reshape dphi
@@ -58,7 +59,7 @@ def ssfp(T1: Union[float, np.ndarray],
     dphi = dphi.reshape((1,) * len(broadcast_shape) + (-1,))
 
     # Broadcast all input arrays to the common shape
-    T1, T2, f0, field_map, M0 = np.broadcast_arrays(*inputs)
+    T1, T2, f0, field_map, M0, alpha = np.broadcast_arrays(*inputs)  # Added alpha to broadcast
 
     # Compute exponential decays
     E1 = np.where(T1 > 0, np.exp(-TR / T1), 0)
@@ -89,7 +90,7 @@ def ssfp(T1: Union[float, np.ndarray],
     # Combine Mx and My into complex magnetization and apply phase and T2 decay
     _phi = beta * (TE / TR) + phi
     T2_decay = np.where(T2 > 0, np.exp(-TE / T2), 0)
-    M = ( Mx + 1j * My) * np.exp(1j * _phi) * T2_decay
+    M = (Mx + 1j * My) * np.exp(1j * _phi) * T2_decay
 
     return np.squeeze(M) if useSqueeze else M
 
