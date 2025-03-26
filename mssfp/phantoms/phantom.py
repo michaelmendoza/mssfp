@@ -41,6 +41,9 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
     # Generate phantom
     print('Generating phantom...')
 
+    # Save function args as settings dict for dataset (use function args as keys)
+    args = locals()
+    
     if phantom_type == 'brain':
         slices = 1 # Using 3D datasets instead of 2d slices 
         dataset = brain.BrainDataset(path)
@@ -65,4 +68,4 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
     print('Dataset complete.')
     print(f'Dataset shape: {M.shape}')
 
-    return { 'M': M, **asdict(phantom) }
+    return { 'M': M, 'settings': args, **asdict(phantom) }
