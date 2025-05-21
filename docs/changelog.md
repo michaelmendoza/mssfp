@@ -2,19 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.0.7] - 2025-05-21
+
+- Updated plot_dataset with args for num_rows, figsize and dpi
 
 ## [0.0.5] - 2025-03-19
 
 - Added support for array of alphas for ssfp simulation
 - Added support to generate phantoms from a list of tissue parameters
 
-## Added 
-
 ## [0.0.4] - 2024-11-15
 
-### Added
 - Updates to phantom generators
   - Updated slice selection in load_dataslice
   - Added print_dataset_info, get_dataset_info
@@ -24,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.1] - 2024-11-05 - Initial development
 
-### Added
 - Initial release with core SSFP simulation and reconstruction capabilities
 - Phantom generators including Shepp-Logan, block phantoms, and brain phantoms
 - Multiple banding artifact removal reconstructions:
