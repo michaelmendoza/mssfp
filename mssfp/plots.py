@@ -5,22 +5,65 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.metrics import normalized_root_mse
 
-def plot_dataset(data, slice = None, cmap='gray'):
-    ''' Plots a slice of dataset of form: [Slice, Height, Width, Channel] '''
+def plot_dataset(data, slice=None, cmap='gray', num_rows=1, figsize=(5, 5), dpi=100):
+    ''' 
+    Plots a slice of dataset of form: [Slice, Height, Width, Channel]
+    
+    Parameters:
+    -----------
+    data : ndarray
+        Dataset of form [Slice, Height, Width, Channel]
+    slice : int, optional
+        Slice index to display (default: 0)
+    cmap : str, optional
+        Colormap name (default: 'gray')
+    num_rows : int, optional
+        Number of rows for plot layout (default: 1, single row)
+    figsize : tuple, optional
+        Figure size (default: (5, 5))
+    dpi : int, optional
+        Figure dpi (default: 100)
+    '''
 
     slice = 0 if slice is None else slice
     npcs = data.shape[3]
-    nx, ny = 2, int(npcs / 2)
-    plt.figure()
-    if(cmap):
+    
+    # Calculate number of columns based on number of rows
+    num_cols = int(np.ceil(npcs / num_rows))
+    
+    # Create figure with adjusted layout
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=figsize, constrained_layout=True, dpi=dpi)
+    
+    if cmap:
         plt.set_cmap(cmap)
-    for ii in range(nx*ny):
+    
+    # Ensure axs is always a 2D array
+    if num_rows == 1 and num_cols == 1:
+        axs = np.array([[axs]])
+    elif num_rows == 1:
+        axs = axs.reshape(1, -1)
+    elif num_cols == 1:
+        axs = axs.reshape(-1, 1)
+        
+    # Plot data
+    for ii in range(npcs):
+        row = ii // num_cols
+        col = ii % num_cols
+        
         _data = np.abs(data[slice, :, :, ii])
-        plt.subplot(nx, ny, ii+1)
-        plt.imshow(_data)
-        plt.title('%d deg PC' % (ii*(360/npcs)))
-        plt.xticks([])
-        plt.yticks([])
+        axs[row, col].imshow(_data)
+        axs[row, col].set_title(f'{int(ii*(360/npcs))}° PC')
+        axs[row, col].set_xticks([])
+        axs[row, col].set_yticks([])
+    
+    # Hide empty subplots if any
+    for ii in range(npcs, num_rows * num_cols):
+        row = ii // num_cols
+        col = ii % num_cols
+        axs[row, col].set_visible(False)
+    
+    # Adjust layout to reduce space between subplots
+    plt.tight_layout()
     plt.show()
 
 def combine_channels(data):
