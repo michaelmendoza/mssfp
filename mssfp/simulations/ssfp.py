@@ -62,8 +62,9 @@ def ssfp(T1: Union[float, np.ndarray],
     T1, T2, f0, field_map, M0, alpha = np.broadcast_arrays(*inputs)  # Added alpha to broadcast
 
     # Compute exponential decays
-    E1 = np.where(T1 > 0, np.exp(-TR / T1), 0)
-    E2 = np.where(T2 > 0, np.exp(-TR / T2), 0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        E1 = np.where(T1 > 0, np.exp(-TR / T1), 0)
+        E2 = np.where(T2 > 0, np.exp(-TR / T2), 0)
 
     # Compute beta and trigonometric functions
     beta = 2 * np.pi * (f0 + field_map) * TR
@@ -89,7 +90,8 @@ def ssfp(T1: Union[float, np.ndarray],
 
     # Combine Mx and My into complex magnetization and apply phase and T2 decay
     _phi = beta * (TE / TR) + phi
-    T2_decay = np.where(T2 > 0, np.exp(-TE / T2), 0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        T2_decay = np.where(T2 > 0, np.exp(-TE / T2), 0)
     M = (Mx + 1j * My) * np.exp(1j * _phi) * T2_decay
 
     return np.squeeze(M) if useSqueeze else M

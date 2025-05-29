@@ -30,16 +30,19 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
                           sigma = 0.005, 
                           f: float = 0,
                           df: float = 1/3e-3,
+                          df_window: float = 0.0,
                           fn_offset: float = 0, 
                           fn_sigma: float = 0,
                           rotation: float = 0,
                           useRotate: bool = False, 
                           useDeform: bool = False, 
                           data_indices: Tuple[Any, Any] = ((None, None), (None,None)),
-                          path: str = './data'):
+                          path: str = './data',
+                          verbose: bool = True):
 
     # Generate phantom
-    print('Generating phantom...')
+    if verbose:
+        print('Generating phantom...')
 
     # Save function args as settings dict for dataset (use function args as keys)
     args = locals()
@@ -48,15 +51,20 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
         slices = 1 # Using 3D datasets instead of 2d slices 
         dataset = brain.BrainDataset(path)
         seg = dataset.load_slice(data_indices[0], data_indices[1])
+        
+        if verbose:
+            print(f'Generating 3D phantom: {seg.shape}')
+
         generator = brain.PhantomGenerator()
-        phantom = generator.generate_3d_phantom(seg, N=shape, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+        phantom = generator.generate_3d_phantom(seg, N=shape, f=f, df=df, df_window=df_window, fn_offset=fn_offset, fn_sigma=fn_sigma, 
                                                 rotation=rotation, useRotate=useRotate, useDeform=useDeform)
     else:
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
-        phantom = simple.generate_phantom(seg, slices=slices, f=f, df=df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+        phantom = simple.generate_phantom(seg, slices=slices, f=f, df=df,  df_window=df_window, fn_offset=fn_offset, fn_sigma=fn_sigma, 
                                           rotation=rotation, useRotate=useRotate, useDeform=useDeform, tissues=tissues)
 
-    print('Generating SSFP dataset...')
+    if verbose:
+        print('Generating SSFP dataset...')
 
     # Simulation SSFP with phantom data 
     dataset = []
@@ -65,7 +73,8 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
     if sigma > 0:
         M = add_noise_gaussian(M, sigma=sigma)
 
-    print('Dataset complete.')
-    print(f'Dataset shape: {M.shape}')
+    if verbose:
+        print('Dataset complete.')
+        print(f'Dataset shape: {M.shape}')
 
     return { 'M': M, 'settings': args, **asdict(phantom) }

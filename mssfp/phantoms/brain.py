@@ -115,14 +115,13 @@ class PhantomGenerator:
         return np.array(Image.fromarray(np.squeeze(img).astype(np.uint8)).resize(size, Image.NEAREST))
 
     def generate_3d_phantom(self, data: np.ndarray, N: int = 128, 
-                          f: float = 0, df: float = 1/3e-3, 
+                          f: float = 0, df: float = 1/3e-3, df_window: float = 0.0,
                           fn_offset: float = 100, fn_sigma: float = 5,
                           rotation: float = 360,
                           useRotate: bool = False, useDeform: bool = False,
                            B0: float = 3, M0: float = 1):
         """Generate 3D phantom with tissue properties."""
         slice_count = data.shape[0]
-        print(f'Generating 3D phantom: {data.shape}')
 
         # Initialize arrays
         sample = np.zeros((slice_count, N, N))
@@ -131,7 +130,8 @@ class PhantomGenerator:
         # Process each slice
         for i in range(slice_count):
             sample[i] = self.resize_mask(data[i], (N, N))
-            offres[i] = fieldmap.generate_fieldmap((N, N), f, df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+            _df = df if df_window == 0 else df * np.random.uniform(1 - df_window, 1 + df_window)
+            offres[i] = fieldmap.generate_fieldmap((N, N), f, _df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
                                                    rotation=rotation, useRotate=useRotate, useDeform=useDeform)
 
         # Generate masks and maps

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.metrics import normalized_root_mse
 
-def plot_dataset(data, slice=None, cmap='gray', num_rows=1, figsize=(5, 5), dpi=100):
+def plot_dataset(data, slice=None, cmap='gray', num_rows=1, figsize=(5, 5), dpi=120):
     ''' 
     Plots a slice of dataset of form: [Slice, Height, Width, Channel]
     
@@ -52,7 +52,7 @@ def plot_dataset(data, slice=None, cmap='gray', num_rows=1, figsize=(5, 5), dpi=
         
         _data = np.abs(data[slice, :, :, ii])
         axs[row, col].imshow(_data)
-        axs[row, col].set_title(f'{int(ii*(360/npcs))}° PC')
+        axs[row, col].set_title(f'{int(ii*(360/npcs))}°')
         axs[row, col].set_xticks([])
         axs[row, col].set_yticks([])
     
