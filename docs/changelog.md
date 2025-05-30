@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.0.8] - 2025-05-29
+## [0.0.9] - 2025-05-29
 
 - Added support for df_window parameter and verbose option in generate_ssfp_dataset
 - Removed warnings from ssfp simulation for division by zero
