@@ -130,8 +130,9 @@ class PhantomGenerator:
         # Process each slice
         for i in range(slice_count):
             sample[i] = self.resize_mask(data[i], (N, N))
+            _f = _f if df_window == 0 else f * np.random.uniform(1 - df_window, 1 + df_window)
             _df = df if df_window == 0 else df * np.random.uniform(1 - df_window, 1 + df_window)
-            offres[i] = fieldmap.generate_fieldmap((N, N), f, _df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+            offres[i] = fieldmap.generate_fieldmap((N, N), _f, _df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
                                                    rotation=rotation, useRotate=useRotate, useDeform=useDeform)
 
         # Generate masks and maps
