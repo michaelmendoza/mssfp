@@ -33,6 +33,8 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
                           df_window: float = 0.0,
                           fn_offset: float = 0, 
                           fn_sigma: float = 0,
+                          fn_perlin: float = 0.0, 
+                          fn_perlin_size: int = 2,
                           rotation: float = 0,
                           useRotate: bool = False, 
                           useDeform: bool = False, 
@@ -57,10 +59,12 @@ def generate_ssfp_dataset(phantom_type: str = 'block',
 
         generator = brain.PhantomGenerator()
         phantom = generator.generate_3d_phantom(seg, N=shape, f=f, df=df, df_window=df_window, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+                                                fn_perlin=fn_perlin, fn_perlin_size=fn_perlin_size,
                                                 rotation=rotation, useRotate=useRotate, useDeform=useDeform)
     else:
         seg = simple.generate_segmentation_masks(shape, ids, padding, phantom_type)
         phantom = simple.generate_phantom(seg, slices=slices, f=f, df=df,  df_window=df_window, fn_offset=fn_offset, fn_sigma=fn_sigma, 
+                                          fn_perlin=fn_perlin, fn_perlin_size=fn_perlin_size,
                                           rotation=rotation, useRotate=useRotate, useDeform=useDeform, tissues=tissues)
 
     if verbose:

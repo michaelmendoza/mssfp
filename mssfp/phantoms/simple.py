@@ -128,6 +128,7 @@ def generate_segmentation_masks( shape: int = 256,
     return output
 
 def generate_phantom(seg: np.ndarray, slices: int = 1, f: float = 0, df: float = 1/3e-3, df_window: float = 0.0, fn_offset: float = 100, fn_sigma: float = 5, 
+                     fn_perlin: float = 0.0, fn_perlin_size: int = 2,
                      rotation: float =15, useRotate: bool = False, useDeform: bool = False, B0: float = 3, M0: float = 1,
                      tissues: Optional[Union[dict, None]] = None):
     """Generate 3D phantom with mask, t1 map, t2 map, f0 mpa, field map, and segmentation mask."""
@@ -160,7 +161,9 @@ def generate_phantom(seg: np.ndarray, slices: int = 1, f: float = 0, df: float =
         _f = _f if df_window == 0 else f * np.random.uniform(1 - df_window, 1 + df_window)
         _df = df if df_window == 0 else df * np.random.uniform(1 - df_window, 1 + df_window)
         print(_df)
-        field_map[i, :] = fieldmap.generate_fieldmap(seg.shape, f=_f, df=_df, useRotate=useRotate, useDeform=useDeform, rotation=rotation, fn_offset=fn_offset, fn_sigma=fn_sigma)
+        field_map[i, :] = fieldmap.generate_fieldmap(seg.shape, f=_f, df=_df, fn_offset=fn_offset, fn_sigma=fn_sigma,
+                                                     fn_perlin=fn_perlin, fn_perlin_size=fn_perlin_size,
+                                                     useRotate=useRotate, useDeform=useDeform, rotation=rotation)
 
     # Create phantom data object
     from .phantom import PhantomData
