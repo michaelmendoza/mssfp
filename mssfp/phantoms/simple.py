@@ -158,7 +158,7 @@ def generate_phantom(seg: np.ndarray, slices: int = 1, f: float = 0, df: float =
     
     # Generate field map
     for i in range(slices):
-        _f = _f if df_window == 0 else f * np.random.uniform(1 - df_window, 1 + df_window)
+        _f = f if df_window == 0 else f * np.random.uniform(1 - df_window, 1 + df_window)
         _df = df if df_window == 0 else df * np.random.uniform(1 - df_window, 1 + df_window)
         print(_df)
         field_map[i, :] = fieldmap.generate_fieldmap(seg.shape, f=_f, df=_df, fn_offset=fn_offset, fn_sigma=fn_sigma,

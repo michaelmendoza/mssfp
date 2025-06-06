@@ -117,7 +117,7 @@ class PhantomGenerator:
     def generate_3d_phantom(self, data: np.ndarray, N: int = 128, 
                           f: float = 0, df: float = 1/3e-3, df_window: float = 0.0,
                           fn_offset: float = 100, fn_sigma: float = 5,
-                          add_perlin: bool = False, perlin_size: int = 2, perlin_scale: float = 0.1,
+                          fn_perlin: float = 0.0, fn_perlin_size: int = 2,
                           rotation: float = 360, useRotate: bool = False, useDeform: bool = False,
                            B0: float = 3, M0: float = 1):
         """Generate 3D phantom with tissue properties."""
@@ -130,10 +130,10 @@ class PhantomGenerator:
         # Process each slice
         for i in range(slice_count):
             sample[i] = self.resize_mask(data[i], (N, N))
-            _f = _f if df_window == 0 else f * np.random.uniform(1 - df_window, 1 + df_window)
+            _f = f if df_window == 0 else f * np.random.uniform(1 - df_window, 1 + df_window)
             _df = df if df_window == 0 else df * np.random.uniform(1 - df_window, 1 + df_window)
             offres[i] = fieldmap.generate_fieldmap((N, N), _f, _df, fn_offset=fn_offset, fn_sigma=fn_sigma, 
-                                                   add_perlin=add_perlin, perlin_size=perlin_size, perlin_scale=perlin_scale,
+                                                   fn_perlin=fn_perlin, fn_perlin_size=fn_perlin_size,
                                                    rotation=rotation, useRotate=useRotate, useDeform=useDeform)
 
         # Generate masks and maps

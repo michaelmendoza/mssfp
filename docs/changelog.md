@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.0.10] - 2025-05-29
+## [0.0.11] - 2025-05-29
 
 - Added support for df_window parameter and verbose option in generate_ssfp_dataset
 - Added support perlin noise option in generate_ssfp_dataset
