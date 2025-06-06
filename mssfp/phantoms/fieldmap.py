@@ -31,7 +31,7 @@ def generate_fieldmap(shape: Tuple[int, ...], f: float = 0, df: float = 300, fn_
     fieldmap += np.random.normal(fn_offset * np.random.uniform(-1, 1), fn_sigma, size=shape)
     
     if fn_perlin > 0:
-        fieldmap += perlin_2d(size=fn_perlin_size, width=shape[0], height=shape[1]) * fn_perlin
+        fieldmap += perlin_2d(size=fn_perlin_size, width=shape[0], height=shape[1]) * fn_perlin * np.random.uniform(0, 1)
 
     if useRotate:
         rot_angle = rotation * np.random.uniform(-1, 1)
