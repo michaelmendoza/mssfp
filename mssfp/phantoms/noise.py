@@ -2,7 +2,24 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-def perlin_2d(size, width, height):
+def fractal_perlin_2d(size, width, height, seed=None, octaves=2, persistence=0.5, lacunarity=2.0):
+    '''Generates 2D fractal Perlin noise with multiple octaves.'''
+    total = np.zeros((height, width))
+    max_amplitude = 0.0
+    amplitude = 1.0
+    frequency = 1.0
+
+    for i in range(octaves):
+        noise = perlin_2d(size * frequency, width, height, seed=seed + i if seed is not None else None)
+        total += noise * amplitude
+        max_amplitude += amplitude
+
+        amplitude *= persistence
+        frequency *= lacunarity
+
+    return total / max_amplitude  # normalize
+
+def perlin_2d(size, width, height, seed=None):
     ''' Generates perlin noise specified width and height. Octave used to set size of noise features. 
     
     Example usage:
@@ -13,7 +30,8 @@ def perlin_2d(size, width, height):
     size = float(size)
     width = int(width)
     height = int(height)    
-    seed = random.randint(1, 1000)
+    if seed is None:
+        seed = random.randint(1, 1000)
     X = np.linspace(0, size, width, endpoint=False)
     Y = np.linspace(0, size, height, endpoint=False)
     x, y = np.meshgrid(X, Y)  
