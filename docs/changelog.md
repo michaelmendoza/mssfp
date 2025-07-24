@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.13] - 2025-07-24
+- Updated perlin_2d with seed, and added fractal_perlin_2d
+
 ## [0.0.12] - 2025-05-29
 
 - Added support for df_window parameter and verbose option in generate_ssfp_dataset
