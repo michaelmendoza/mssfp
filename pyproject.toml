@@ -25,13 +25,13 @@ dependencies = [
     "gdown",
     "imageio",
     "imageio-ffmpeg",
-    "jupyterlab==3.5.3",
-    "matplotlib==3.6.3",
+    "jupyterlab",
+    "matplotlib",
     "nibabel",
-    "numpy==1.23.5",
+    "numpy",
     "scikit-image",
-    "scipy==1.10.0",
-    "tqdm==4.64.1"
+    "scipy",
+    "tqdm"
 ]
 
 [project.urls]
